@@ -3,26 +3,24 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>お役所書類のバカよけ翻訳機</title>
+    <title>Baka-yoke Translator | お役所書類のバカよけ翻訳機</title>
     <link rel="stylesheet" href="style.css">
 </head>
 <body>
     <header>
         <div class="container">
-            <h1>📄 お役所書類のバカよけ翻訳機</h1>
-            <p>難しい言葉を、誰にでもわかる言葉に。</p>
+            <h1>📄 Baka-yoke Translator</h1>
+            <p>JP / CN / KR / EN Multilingual Support</p>
         </div>
     </header>
 
     <main class="container">
         <section class="translator-section">
             <div class="input-group">
-                <label for="input-text">入力 / 输入 / 입력 / Input</label>
-                <textarea id="input-text" placeholder="ここに文章を入力してください...&#10;请输入... / 여기에 입력... / Input here..."></textarea>
-                <div class="button-row">
-                    <button id="sample-btn" class="btn-secondary">ランダムサンプル / Sample</button>
-                    <button id="clear-btn" class="btn-outline">クリア / Clear</button>
-                </div>
+                <label for="input-text">
+                    [JP] 入力 / [CN] 请输入 / [KR] 입력 / [EN] Input
+                </label>
+                <textarea id="input-text" placeholder="Type here... / ここに入力... / 请在这里输入... / 여기에 입력..."></textarea>
             </div>
 
             <div class="divider">
@@ -30,23 +28,32 @@
             </div>
 
             <div class="output-group">
-                <label for="output-text">変換結果 / 结果 / 결과 / Result</label>
+                <label for="output-text">
+                    [JP] 変換結果 / [CN] 结果 / [KR] 결과 / [EN] Result
+                </label>
                 <div id="output-text" class="output-display" aria-live="polite">
-                    <span class="placeholder">変換結果がここに表示されます</span>
+                    <span class="placeholder">Results will appear here automatically.</span>
                 </div>
-                <button id="copy-btn" class="btn-secondary" disabled>コピー / Copy</button>
+            </div>
+
+            <div class="action-footer">
+                <button id="copy-btn" class="btn-primary" disabled>
+                    [JP] コピー / [CN] 复制 / [KR] 복사 / [EN] Copy
+                </button>
             </div>
         </section>
 
         <section class="info-section">
-            <h2>このアプリについて</h2>
-            <p>お役所の書類特有の「難しくて分かりにくい表現」を、日常的な分かりやすい言葉に変換します。心理的なハードルを下げ、手続きをスムーズに進めるための補助ツールです。</p>
+            <p><strong>[JP]</strong> 難しい言葉を、誰にでもわかる言葉にリアルタイム変換します。</p>
+            <p><strong>[CN]</strong> 将公文术语实时转换为易于理解的语言。</p>
+            <p><strong>[KR]</strong> 행정 전문 용어를 알기 쉬운 말로 실시간 변환합니다.</p>
+            <p><strong>[EN]</strong> Real-time translation of bureaucratic terms into plain language.</p>
         </section>
     </main>
 
     <footer>
         <div class="container">
-            <p>&copy; 2026 お役所書類のバカよけ翻訳機</p>
+            <p>&copy; 2026 Baka-yoke Translator</p>
         </div>
     </footer>
 
