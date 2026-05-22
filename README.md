@@ -2,7 +2,7 @@
 
 **Extreme Simplicity / Real-time / Multilingual (JP, CN, KR, EN)**
 
-**URL:** [https://z225t071-ship-it.github.io/my-app-2026/](https://z225t071-ship-it.github.io/my-app-2026/)
+**URL:** https://z225t071-ship-it.github.io/my-app-2026/
 
 ![App Preview](./お役所書類のバカよけ翻訳機.jpg)
 
