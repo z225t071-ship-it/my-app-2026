@@ -4,7 +4,8 @@
 
 **URL:** https://z225t071-ship-it.github.io/my-app-2026/
 
-![App Preview](./最終発表のアプリ.jpg)
+![App Preview]<img width="1068" height="1744" alt="最終発表のアプリ" src="https://github.com/user-attachments/assets/fda99b6e-6462-42c6-a225-acc39fd0921f" />
+
 
 ## 🚀 使い方 / How to Use
 
