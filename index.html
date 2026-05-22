@@ -4,14 +4,17 @@
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
     <title>GANYAKU - 行政文書クラッシャー</title>
+    <!-- 引入 Tesseract.js 用於真實 OCR 圖片文字識別 -->
+    <script src="https://cdn.jsdelivr.net/npm/tesseract.js@4/dist/tesseract.min.js"></script>
     <style>
         :root {
             --bg-color: #000000;
             --panel-bg: #0d0d0d;
-            --border-color: #ffffff;
+            --text-color: #ffffff;
+            --text-muted: #666666;
             --danger-color: #ff0055;
-            --warning-color: #ffcc00;
             --safe-color: #00ff00;
+            --warning-color: #ffcc00;
             --accent-blue: #0078D4;
         }
 
@@ -22,8 +25,8 @@
         body {
             margin: 0;
             background-color: var(--bg-color);
-            color: #ffffff;
-            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
+            color: var(--text-color);
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Helvetica Neue", Arial, sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -31,22 +34,64 @@
             overflow-x: hidden;
         }
 
-        /* スマホ用モックアップ外枠 */
+        /* 手機外框 */
         .phone-container {
             width: 100%;
             max-width: 390px;
             height: 844px;
             background-color: var(--panel-bg);
-            border: 8px solid #222;
+            border: 8px solid #1a1a1a;
             border-radius: 40px;
             position: relative;
             display: flex;
             flex-direction: column;
             overflow: hidden;
-            box-shadow: 0 0 50px rgba(255, 0, 85, 0.15);
+            box-shadow: 0 25px 50px -12px rgba(0, 0, 0, 0.5);
         }
 
-        /* 画面共通 */
+        /* 頂部導航列 */
+        .app-bar {
+            display: flex;
+            justify-content: space-between;
+            align-items: center;
+            padding: 20px 24px 10px 24px;
+            z-index: 10;
+        }
+
+        .brand-logo {
+            font-size: 1.5rem;
+            font-weight: 900;
+            letter-spacing: -1px;
+            text-transform: uppercase;
+        }
+
+        /* 語言切換器 */
+        .lang-selector {
+            display: flex;
+            background: #1e1e1e;
+            padding: 2px;
+            border-radius: 8px;
+            gap: 2px;
+        }
+
+        .lang-btn {
+            background: transparent;
+            border: none;
+            color: var(--text-muted);
+            font-size: 0.75rem;
+            font-weight: bold;
+            padding: 6px 10px;
+            border-radius: 6px;
+            cursor: pointer;
+            transition: 0.1s;
+        }
+
+        .lang-btn.active {
+            background: #ffffff;
+            color: #000000;
+        }
+
+        /* 畫面基底 */
         .screen {
             position: absolute;
             top: 0;
@@ -55,7 +100,7 @@
             height: 100%;
             display: flex;
             flex-direction: column;
-            padding: 25px;
+            padding: 70px 24px 24px 24px; /* 避開頂部 app-bar */
             opacity: 0;
             pointer-events: none;
             transition: opacity 0.25s ease-in-out;
@@ -67,76 +112,49 @@
             pointer-events: auto;
         }
 
-        .app-header {
-            text-align: center;
-            margin-top: 10px;
-            margin-bottom: 20px;
-        }
-
-        .app-title {
-            font-size: 2.8rem;
-            font-weight: 900;
-            line-height: 0.9;
-            letter-spacing: -2px;
-            background: linear-gradient(90deg, var(--danger-color), var(--warning-color));
-            -webkit-background-clip: text;
-            -webkit-text-fill-color: transparent;
-            margin: 0;
-            text-transform: uppercase;
-        }
-
-        .app-subtitle {
-            font-size: 0.9rem;
-            color: #666;
-            letter-spacing: 2px;
-            margin-top: 5px;
-            font-weight: bold;
-        }
-
-        /* --- 画面1：リアルカメラ画面 --- */
+        /* --- 畫面 1：極簡相機預覽 --- */
         .camera-container {
             flex: 1;
             position: relative;
-            border: 4px solid #333;
-            border-radius: 20px;
+            border-radius: 24px;
             overflow: hidden;
-            background: #111;
+            background: #050505;
         }
 
         #webcam {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: none; /* カメラ起動後に表示 */
+            display: none;
         }
 
-        /* カメラの中央に表示される「フォーカス枠」：これがあるだけで一気に本物感が出る */
+        /* 極簡掃描框 */
         .scan-frame {
             position: absolute;
-            top: 10%;
+            top: 15%;
             left: 10%;
             width: 80%;
-            height: 80%;
-            border: 2px solid rgba(0, 255, 0, 0.4);
+            height: 70%;
+            border: 1px solid rgba(255, 255, 255, 0.15);
             pointer-events: none;
             z-index: 5;
-            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* 枠の外側を暗くする */
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.6);
         }
 
-        /* 枠の四隅の太線 */
+        /* 四個角極簡白色線條 */
         .scan-frame::before, .scan-frame::after,
         .scan-corner-bl, .scan-corner-br {
             position: absolute;
-            width: 20px;
-            height: 20px;
-            border-color: var(--safe-color);
+            width: 16px;
+            height: 16px;
+            border-color: #ffffff;
             border-style: solid;
             pointer-events: none;
         }
-        .scan-frame::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; } /* 左上 */
-        .scan-frame::after { top: -2px; right: -2px; border-width: 4px 4px 0 0; } /* 右上 */
-        .scan-corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; } /* 左下 */
-        .scan-corner-br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; } /* 右下 */
+        .scan-frame::before { top: -1px; left: -1px; border-width: 3px 0 0 3px; }
+        .scan-frame::after { top: -1px; right: -1px; border-width: 3px 3px 0 0; }
+        .scan-corner-bl { bottom: -1px; left: -1px; border-width: 0 0 3px 3px; }
+        .scan-corner-br { bottom: -1px; right: -1px; border-width: 0 3px 3px 0; }
 
         .camera-placeholder {
             position: absolute;
@@ -145,87 +163,81 @@
             transform: translate(-50%, -50%);
             text-align: center;
             z-index: 1;
-            width: 90%;
+            width: 80%;
         }
 
         .scan-icon {
-            font-size: 3.5rem;
-            margin-bottom: 10px;
+            font-size: 2.5rem;
+            color: var(--text-muted);
+            margin-bottom: 12px;
         }
 
         .scan-prompt {
-            font-size: 1.1rem;
-            font-weight: bold;
-            color: #888;
+            font-size: 0.95rem;
+            font-weight: 500;
+            color: var(--text-muted);
+            line-height: 1.4;
         }
 
-        /* シャッターフラッシュ（シャッター押した時の白い閃光） */
+        /* 閃光燈效果 */
         .flash-overlay {
             position: absolute;
             top: 0;
             left: 0;
             width: 100%;
             height: 100%;
-            background: #fff;
+            background: #ffffff;
             opacity: 0;
             z-index: 10;
             pointer-events: none;
         }
 
+        /* 快門大按鈕 */
         .shutter-btn {
             width: 100%;
-            background: var(--danger-color);
-            color: white;
+            background: #ffffff;
+            color: #000000;
             border: none;
             padding: 20px;
-            font-size: 1.6rem;
-            font-weight: 900;
-            border-radius: 15px;
-            margin-top: 15px;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 16px;
+            margin-top: 16px;
             cursor: pointer;
-            box-shadow: 0 5px 0 #b3003b;
+            transition: transform 0.1s, background-color 0.1s;
             text-transform: uppercase;
             letter-spacing: 1px;
         }
         .shutter-btn:active {
-            transform: translateY(4px);
-            box-shadow: 0 1px 0 #b3003b;
+            transform: scale(0.98);
+            background-color: #e5e5e5;
         }
 
-        .sample-selector-title {
-            font-size: 0.9rem;
-            color: #555;
-            margin: 15px 0 5px 0;
-            text-transform: uppercase;
-            letter-spacing: 1px;
-            text-align: center;
-            font-weight: bold;
-        }
-
-        .sample-buttons {
+        /* 底部演示按鈕 */
+        .demo-bar {
+            margin-top: 16px;
             display: flex;
             gap: 8px;
-            margin-bottom: 10px;
         }
 
-        .sample-mini-btn {
+        .demo-btn {
             flex: 1;
-            background: #111;
-            border: 1px solid #333;
-            color: #aaa;
+            background: #111111;
+            border: 1px solid #222222;
+            color: var(--text-muted);
             padding: 12px 5px;
             font-size: 0.75rem;
-            font-weight: 900;
+            font-weight: 600;
             cursor: pointer;
-            border-radius: 8px;
-            text-align: center;
+            border-radius: 10px;
+            transition: 0.1s;
         }
-        .sample-mini-btn:hover {
-            background: #fff;
-            color: #000;
+        .demo-btn:hover {
+            border-color: #444444;
+            color: #ffffff;
         }
 
-        /* --- 画面2：リアルスキャン中（背景に撮影写真が入る） --- */
+        /* --- 畫面 2：極簡掃描中 --- */
         .loading-container {
             flex: 1;
             display: flex;
@@ -233,8 +245,8 @@
             justify-content: center;
             align-items: center;
             position: relative;
-            background: #000;
-            border-radius: 20px;
+            background: #000000;
+            border-radius: 24px;
             overflow: hidden;
         }
 
@@ -243,273 +255,515 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.4;
-            filter: blur(2px) grayscale(0.5);
+            opacity: 0.3;
+            filter: grayscale(1);
         }
 
         .laser-line {
             position: absolute;
             width: 100%;
-            height: 6px;
-            background: var(--danger-color);
-            box-shadow: 0 0 20px var(--danger-color), 0 0 10px #fff;
+            height: 2px;
+            background: #ffffff;
+            box-shadow: 0 0 12px #ffffff;
             top: 0;
             z-index: 2;
-            animation: scanMove 1.8s infinite ease-in-out;
-        }
-
-        @keyframes scanMove {
-            0% { top: 5%; }
-            50% { top: 95%; }
-            100% { top: 5%; }
+            animation: scanMove 1.5s infinite ease-in-out;
         }
 
         .loading-text {
-            font-size: 2.5rem;
+            font-size: 1.5rem;
             font-weight: 900;
-            color: #fff;
-            text-transform: uppercase;
-            letter-spacing: -1px;
-            margin-bottom: 10px;
-            text-align: center;
+            color: #ffffff;
+            letter-spacing: 2px;
             z-index: 3;
-            text-shadow: 0 0 10px #000;
+            text-transform: uppercase;
+            text-align: center;
+            padding: 0 20px;
         }
 
-        /* --- 画面3：結果画面 --- */
+        .loading-subtext {
+            font-size: 0.8rem;
+            color: var(--text-muted);
+            z-index: 3;
+            margin-top: 10px;
+            text-align: center;
+        }
+
+        /* --- 畫面 3：極簡結論畫面 --- */
         .result-scroll {
             flex: 1;
             overflow-y: auto;
-            padding-right: 5px;
+            padding-right: 2px;
         }
         .result-scroll::-webkit-scrollbar { width: 0; }
 
-        .keyword-panel {
-            background: #000;
-            border: 3px solid var(--border-color);
-            padding: 15px;
-            margin-bottom: 20px;
+        /* 核心結論看板 */
+        .conclusion-card {
+            background: #111111;
+            border: 1px solid #222222;
+            border-radius: 20px;
+            padding: 24px;
+            margin-bottom: 24px;
             position: relative;
         }
 
-        .status-badge {
+        .status-pill {
             position: absolute;
-            top: -15px;
-            right: 15px;
-            font-size: 1.1rem;
-            font-weight: 900;
-            padding: 4px 12px;
-            transform: skewX(-10deg);
-        }
-        .status-red { background: var(--danger-color); color: #fff; }
-        .status-yellow { background: var(--warning-color); color: #000; }
-        .status-green { background: var(--safe-color); color: #000; }
-
-        .keyword-row {
-            display: flex;
-            justify-content: space-between;
-            align-items: baseline;
-            border-bottom: 1px dashed #333;
-            padding: 8px 0;
-        }
-        .keyword-row:last-child { border-bottom: none; }
-
-        .k-label { font-size: 0.85rem; color: #666; font-weight: bold; }
-        .k-value { font-size: 1.6rem; font-weight: 900; }
-        .k-value.large { font-size: 2.6rem; color: var(--warning-color); line-height: 1; }
-
-        .step-section-title {
-            font-size: 1.3rem;
-            font-weight: 900;
-            margin-bottom: 12px;
-            border-left: 5px solid var(--safe-color);
-            padding-left: 10px;
+            top: 20px;
+            right: 20px;
+            font-size: 0.7rem;
+            font-weight: 800;
+            padding: 4px 10px;
+            border-radius: 6px;
             text-transform: uppercase;
+            letter-spacing: 1px;
+        }
+        .pill-red { background: rgba(255, 0, 85, 0.15); color: var(--danger-color); border: 1px solid var(--danger-color); }
+        .pill-yellow { background: rgba(255, 204, 0, 0.15); color: var(--warning-color); border: 1px solid var(--warning-color); }
+        .pill-green { background: rgba(0, 255, 0, 0.15); color: var(--safe-color); border: 1px solid var(--safe-color); }
+
+        .result-item {
+            margin-bottom: 16px;
+        }
+        .result-item:last-child { margin-bottom: 0; }
+
+        .item-label {
+            font-size: 0.75rem;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 4px;
+            display: block;
+            font-weight: bold;
         }
 
-        .step-card {
-            background: #111;
-            border: 2px solid #222;
-            padding: 15px;
+        .item-value {
+            font-size: 1.4rem;
+            font-weight: 800;
+            letter-spacing: -0.5px;
+        }
+
+        .item-value.huge {
+            font-size: 2.5rem;
+            color: #ffffff;
+            line-height: 1;
+            font-weight: 900;
+        }
+
+        /* 步驟 */
+        .section-title {
+            font-size: 1rem;
+            font-weight: 800;
+            color: var(--text-muted);
+            text-transform: uppercase;
+            margin-bottom: 16px;
+            letter-spacing: 1px;
+        }
+
+        .step-tile {
+            background: #111111;
+            border-radius: 16px;
+            padding: 16px;
             margin-bottom: 12px;
             display: flex;
+            gap: 16px;
             align-items: flex-start;
-            gap: 12px;
-            border-radius: 12px;
         }
 
-        .step-num {
-            background: var(--safe-color);
-            color: #000;
-            font-size: 1.1rem;
+        .step-index {
+            font-size: 0.9rem;
             font-weight: 900;
-            padding: 2px 8px;
+            color: var(--text-muted);
+            background: #1e1e1e;
+            width: 24px;
+            height: 24px;
+            display: flex;
+            align-items: center;
+            justify-content: center;
             border-radius: 6px;
         }
 
-        .step-title { font-size: 1.2rem; font-weight: 900; color: #fff; margin: 0 0 4px 0; }
-        .step-desc { font-size: 0.85rem; color: #888; margin: 0; line-height: 1.3; }
+        .step-info { flex: 1; }
+        .step-heading { font-size: 1.05rem; font-weight: 800; color: #ffffff; margin: 0 0 4px 0; }
+        .step-detail { font-size: 0.85rem; color: var(--text-muted); margin: 0; line-height: 1.4; }
 
-        .action-btn {
+        .done-btn {
             width: 100%;
-            background: var(--accent-blue);
-            color: #fff;
+            background: #ffffff;
+            color: #000000;
             border: none;
             padding: 18px;
-            font-size: 1.6rem;
-            font-weight: 900;
+            font-size: 1.1rem;
+            font-weight: 800;
+            border-radius: 16px;
+            margin-top: 16px;
             cursor: pointer;
-            margin-top: 10px;
-            box-shadow: 0 5px 0 #004c87;
+            text-transform: uppercase;
         }
-        .action-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #004c87; }
-        .action-btn.reset-btn { background: #222; box-shadow: 0 5px 0 #111; }
-        .action-btn.reset-btn:active { box-shadow: 0 1px 0 #111; }
+        .done-btn:active { transform: scale(0.98); }
     </style>
 </head>
 <body>
 
     <div class="phone-container">
-
-        <!-- SCREEN 1: カメラ起動画面 -->
-        <div class="screen active" id="screen-start">
-            <div class="app-header">
-                <h1 class="app-title">GANYAKU</h1>
-                <div class="app-subtitle">行政文書クラッシャー</div>
+        <!-- 頂部常駐：品牌 & 多國語言切換 -->
+        <div class="app-bar">
+            <div class="brand-logo">GANYAKU</div>
+            <div class="lang-selector">
+                <button class="lang-btn active" id="btn-jp" onclick="changeLanguage('jp')">JP</button>
+                <button class="lang-btn" id="btn-cn" onclick="changeLanguage('cn')">CN</button>
+                <button class="lang-btn" id="btn-en" onclick="changeLanguage('en')">EN</button>
+                <button class="lang-btn" id="btn-kr" onclick="changeLanguage('kr')">KR</button>
             </div>
+        </div>
 
+        <!-- SCREEN 1：極簡相機 -->
+        <div class="screen active" id="screen-start">
             <div class="camera-container">
                 <div class="camera-placeholder" id="cam-placeholder">
-                    <div class="scan-icon">📸</div>
-                    <div class="scan-prompt">カメラ起動中...<br><span style="font-size:0.8rem; color:#555;">(許可してください)</span></div>
+                    <div class="scan-icon">🔲</div>
+                    <div class="scan-prompt" id="prompt-loading">CAMERA INITIALIZING...</div>
                 </div>
-                <!-- リアルカメラ映像 -->
                 <video id="webcam" autoplay playsinline></video>
                 
-                <!-- カメラの対角線ガイド線 -->
                 <div class="scan-frame" id="scan-guide" style="display:none;">
                     <div class="scan-corner-bl"></div>
                     <div class="scan-corner-br"></div>
                 </div>
 
-                <!-- シャッターフラッシュ演出用の白いレイヤー -->
                 <div class="flash-overlay" id="flash"></div>
             </div>
 
-            <button class="shutter-btn" onclick="takeSnapshot()">📸 書類をスキャン</button>
+            <button class="shutter-btn" id="btn-shutter" onclick="takeSnapshot()">SCAN DOCUMENT</button>
 
-            <div class="sample-selector-title">またはサンプルで検証 (デモ用)</div>
-            <div class="sample-buttons">
-                <button class="sample-mini-btn" onclick="triggerDemo('juumin')">📄 住民税</button>
-                <button class="sample-mini-btn" onclick="triggerDemo('nenkin')">🚨 年金督促</button>
-                <button class="sample-mini-btn" onclick="triggerDemo('suido')">💧 水道料金</button>
+            <div class="sample-selector-title" id="lbl-demo">DEMO SAMPLES</div>
+            <div class="demo-bar">
+                <button class="demo-btn" onclick="triggerDemo('juumin')">📄 税金 (TAX)</button>
+                <button class="demo-btn" onclick="triggerDemo('nenkin')">🚨 年金 (PENSION)</button>
+                <button class="demo-btn" onclick="triggerDemo('suido')">💧 水道 (WATER)</button>
             </div>
         </div>
 
-        <!-- SCREEN 2: リアルスキャン中（背景に撮影写真が入る） -->
+        <!-- SCREEN 2：極簡掃描中 (具有 OCR 進度回饋) -->
         <div class="screen" id="screen-loading">
             <div class="loading-container">
-                <img id="scan-back-preview" src="" alt="Captured Document">
+                <img id="scan-back-preview" src="" alt="Capture">
                 <div class="laser-line"></div>
-                <div class="loading-text">ANALYZING...</div>
+                <div class="loading-text" id="lbl-analyzing">OCR READING...</div>
+                <div class="loading-subtext" id="lbl-progress">Initializing engine...</div>
             </div>
         </div>
 
-        <!-- SCREEN 3: 暴力結果画面 -->
+        <!-- SCREEN 3：結果畫面 -->
         <div class="screen" id="screen-result">
-            <div class="app-header" style="margin-bottom: 10px;">
-                <h1 class="app-title" style="font-size: 1.8rem;">CONCLUSION</h1>
-            </div>
-
             <div class="result-scroll">
-                <div class="keyword-panel">
-                    <div class="status-badge" id="res-status">重要度：大</div>
-                    <div class="keyword-row">
-                        <span class="k-label">書類の種類 (WHAT)</span>
-                        <span class="k-value" id="res-type">-</span>
+                <div class="conclusion-card">
+                    <div class="status-pill pill-yellow" id="res-status">-</div>
+                    
+                    <div class="result-item">
+                        <span class="item-label" id="lbl-res-type">DOCUMENT TYPE</span>
+                        <span class="item-value" id="res-type">-</span>
                     </div>
-                    <div class="keyword-row">
-                        <span class="k-label">払う金額 (MONEY)</span>
-                        <span class="k-value large" id="res-money">-</span>
+                    <div class="result-item">
+                        <span class="item-label" id="lbl-res-money">PAYMENT AMOUNT</span>
+                        <span class="item-value huge" id="res-money">-</span>
                     </div>
-                    <div class="keyword-row">
-                        <span class="k-label">期限 (DEADLINE)</span>
-                        <span class="k-value" id="res-deadline">-</span>
-                    </div>
-                </div>
-
-                <div class="step-section-title">やるべきこと (3 STEPS)</div>
-
-                <div class="step-card">
-                    <div class="step-num">01</div>
-                    <div class="step-content">
-                        <h3 class="step-title" id="step1-title">-</h3>
-                        <p class="step-desc" id="step1-desc">-</p>
+                    <div class="result-item">
+                        <span class="item-label" id="lbl-res-deadline">DEADLINE</span>
+                        <span class="item-value" id="res-deadline">-</span>
                     </div>
                 </div>
 
-                <div class="step-card">
-                    <div class="step-num">02</div>
-                    <div class="step-content">
-                        <h3 class="step-title" id="step2-title">-</h3>
-                        <p class="step-desc" id="step2-desc">-</p>
+                <div class="section-title" id="lbl-actions">REQUIRED ACTIONS</div>
+
+                <div class="step-tile">
+                    <div class="step-index">1</div>
+                    <div class="step-info">
+                        <h4 class="step-heading" id="step1-title">-</h4>
+                        <p class="step-detail" id="step1-desc">-</p>
                     </div>
                 </div>
 
-                <div class="step-card">
-                    <div class="step-num">03</div>
-                    <div class="step-content">
-                        <h3 class="step-title" id="step3-title">-</h3>
-                        <p class="step-desc" id="step3-desc">-</p>
+                <div class="step-tile">
+                    <div class="step-index">2</div>
+                    <div class="step-info">
+                        <h4 class="step-heading" id="step2-title">-</h4>
+                        <p class="step-detail" id="step2-desc">-</p>
+                    </div>
+                </div>
+
+                <div class="step-tile">
+                    <div class="step-index">3</div>
+                    <div class="step-info">
+                        <h4 class="step-heading" id="step3-title">-</h4>
+                        <p class="step-detail" id="step3-desc">-</p>
                     </div>
                 </div>
             </div>
 
-            <button class="action-btn reset-btn" onclick="resetApp()">UNDERSTOOD (戻る)</button>
+            <button class="done-btn" id="btn-done" onclick="resetApp()">OK</button>
         </div>
-
     </div>
 
-    <!-- 瞬時にスクショを撮るための隠しキャンバス -->
     <canvas id="capture-canvas" style="display:none;"></canvas>
 
     <script>
-        const documentDatabase = {
-            'juumin': {
-                statusText: '重要度：大', statusClass: 'status-yellow',
-                type: '住民税（じゅうみんぜい）', money: '¥14,500', deadline: '6月30日（木）まで',
-                steps: [
-                    { title: '「納付書」をちぎる', desc: '封筒の中から「バーコード」がついている縦長の紙を探して、それだけを破り取る。他は全部無視。' },
-                    { title: 'コンビニのレジに行く', desc: 'その紙と財布を持ってコンビニへ行く。大脳は使わなくてよい。' },
-                    { title: 'お金を払って終了', desc: 'レジで店員に紙を渡し、14,500円を払う。スタンプを押された控えをもらってミッション完了。' }
-                ]
+        // 多語言翻譯與智慧模組資料庫
+        const translations = {
+            jp: {
+                promptLoading: "カメラ起動中...<br>(許可してください)",
+                btnShutter: "書類をスキャン",
+                lblDemo: "またはサンプルで検証 (デモ用)",
+                lblAnalyzing: "実写OCR解析中...",
+                lblResType: "書類の種類 (WHAT)",
+                lblResMoney: "払う金額 (MONEY)",
+                lblResDeadline: "期限 (DEADLINE)",
+                lblActions: "やるべきこと (3 STEPS)",
+                btnDone: "了解 (戻る)",
+                statusHigh: "重要度：大",
+                statusUrgent: "警告：即死級",
+                statusNormal: "重要度：通常",
+                statusTrash: "不要：ゴミ箱へ",
+                ocrProgress: "文字を認識しています...",
+                // 定製真實掃描結果 (當真實 OCR 失敗或為空時的智能解析包)
+                customScan: {
+                    type: "検出された書類",
+                    steps: [
+                        { t: "「バーコード」を確認", d: "バーコードが付いている紙があるか手元を確認する。" },
+                        { t: "指定金額を支払う", d: "バーコードがある場合はコンビニのレジへ行き、スマホ画面に表示された金額を支払う。" },
+                        { t: "不要書類は廃棄", d: "残りの長い説明資料は不要なので、すぐにゴミ箱へ捨ててよい。" }
+                    ]
+                },
+                // 若沒有掃描到任何金額的垃圾信/廣告信判定
+                trashScan: {
+                    type: "ダイレクトメール・広告",
+                    money: "¥ 0 (不要)",
+                    deadline: "今すぐ破棄可能",
+                    steps: [
+                        { t: "ゴミ箱に捨てる", d: "これは請求書ではありません。ただの広告、または案内通知です。お金を払う必要は一切ありません。" },
+                        { t: "個人情報を破る", d: "自分の名前や住所が載っている部分だけは、手で細かく引きちぎってから捨てること。" },
+                        { t: "完全に忘れる", d: "これ以上悩む必要はありません。脳のメモリを解放してください。" }
+                    ]
+                },
+                // 預設樣品
+                data: {
+                    juumin: {
+                        type: '住民税（じゅうみんぜい）', money: '¥14,500', deadline: '6月30日（木）まで',
+                        steps: [
+                            { t: '「納付書」をちぎる', d: '封筒の中から「バーコード」がついている縦長の紙を探して、それだけを破り取る。他は全部無視。' },
+                            { t: 'コンビニのレジに行く', d: 'その紙と財布を持ってコンビニへ行く。大脳は使わなくてよい。' },
+                            { t: 'お金を払って終了', d: 'レジで店員に紙を渡し、14,500円を払う。スタンプを押された控えをもらってミッション完了。' }
+                        ]
+                    },
+                    nenkin: {
+                        type: '国民年金 催告状', money: '¥33,060', deadline: '今すぐ（指定日超過）',
+                        steps: [
+                            { t: 'ピンクか赤の紙を探す', d: '「催告状」と書かれた一番ヤバそうな色のバーコード付きの紙を引っ張り出す。' },
+                            { t: 'ATMで現金を下ろす', d: '34,000円くらいを下ろして、そのままコンビニのレジへ直行する。無視すると口座ロックの危険。' },
+                            { t: 'レジで払って呪縛を解く', d: '店員に渡して支払う。これで国からの恐怖の督促は一旦止まる。' }
+                        ]
+                    },
+                    suido: {
+                        type: '水道料金（すいどう）', money: '¥3,240', deadline: '7月15日まで',
+                        steps: [
+                            { t: 'ポストのペラペラな紙', d: 'ポストに入っていた、青い文字がたくさん書いてある小さな感熱紙（バーコード付き）を用意。' },
+                            { t: '夜食のついでに持っていく', d: '急ぐ必要はない。次にコンビニに夜食を買いに行く時に、その紙をポケットに入れておく。' },
+                            { t: 'レジで一緒にスキャン', d: 'ファミチキやラーメンを買うついでに店員に渡し、合算して支払う。これだけ。' }
+                        ]
+                    }
+                }
             },
-            'nenkin': {
-                statusText: '警告：即死級', statusClass: 'status-red',
-                type: '国民年金 催告状', money: '¥33,060', deadline: '今すぐ（指定日超過）',
-                steps: [
-                    { title: 'ピンクか赤の紙を探す', desc: '「催告状」と書かれた一番ヤバそうな色のバーコード付きの紙を引っ張り出す。' },
-                    { title: 'ATMで現金を下ろす', desc: '34,000円くらいを下ろして、そのままコンビニのレジへ直行する。無視すると口座ロックの危険。' },
-                    { title: 'レジで払って呪縛を解く', desc: '店員に渡して支払う。これで国からの恐怖の督促は一旦止まる。' }
-                ]
+            cn: {
+                promptLoading: "相機啟動中...<br>(請允許權限)",
+                btnShutter: "掃描文件",
+                lblDemo: "或點選範例快速演示",
+                lblAnalyzing: "實時 OCR 解析中...",
+                lblResType: "文件種類 (WHAT)",
+                lblResMoney: "應付金額 (MONEY)",
+                lblResDeadline: "繳費期限 (DEADLINE)",
+                lblActions: "你只需要做 3 件事 (3 STEPS)",
+                btnDone: "我知道了 (返回)",
+                statusHigh: "重要度：高",
+                statusUrgent: "警告：非常危險",
+                statusNormal: "重要度：普通",
+                statusTrash: "垃圾郵件：直接丟掉",
+                ocrProgress: "正在識別圖片中的文字與金額...",
+                customScan: {
+                    type: "偵測到的真實公文",
+                    steps: [
+                        { t: "確認有無「條碼」", d: "翻看你手上的紙張，確認是否有可以繳費的超商條碼 (Barcode)。" },
+                        { t: "前往超商繳費", d: "如果有條碼，帶著那張單子與現金前往超商，支付畫面顯示的金額。" },
+                        { t: "撕毀無用附件", d: "除了條碼單，其餘密密麻麻的說明書沒有任何保留價值，直接丟棄。" }
+                    ]
+                },
+                trashScan: {
+                    type: "行銷廣告 / 普通通知",
+                    money: "¥ 0 (免繳費)",
+                    deadline: "可立即撕毀",
+                    steps: [
+                        { t: "扔進垃圾桶", d: "這不是任何繳費帳單，只是無意義的廣告宣傳或普通問候通知，一分錢都不需要付。" },
+                        { t: "防洩密銷毀", d: "將印有自己姓名和地址的區塊用手撕碎，避免個人隱私外洩。" },
+                        { t: "徹底解放大腦", d: "不需要再感到焦慮，放心地去打遊戲或睡覺吧！" }
+                    ]
+                },
+                data: {
+                    juumin: {
+                        type: '居民稅 (住民税)', money: '¥14,500', deadline: '6月30日 (週四) 為止',
+                        steps: [
+                            { t: '撕下「繳費單」', d: '打開信封，只找出有「條碼 (Barcode)」的那張長方形紙條。其他說明廢話直接扔掉。' },
+                            { t: '走向最近的超商', d: '帶著那張條碼紙和現金，走到最近的 7-11、全家或 Lawson。' },
+                            { t: '交給店員，付款', d: '把紙條遞給店員，支付 14,500 日圓。拿好蓋章的收據即可。' }
+                        ]
+                    },
+                    nenkin: {
+                        type: '國民年金 催繳通知書', money: '¥33,060', deadline: '立刻 (已逾期)',
+                        steps: [
+                            { t: '找出粉紅/紅色的單子', d: '從信封中找出最顯眼、印有條碼的粉紅色或紅色催繳單。' },
+                            { t: '去 ATM 領取現金', d: '領取約 34,000 日圓，直接前往超商。不理會的話銀行帳戶可能被凍結。' },
+                            { t: '在超商櫃檯繳清', d: '把單子給店員並付款。這樣一來，政府的催繳程序就會暫停。' }
+                        ]
+                    },
+                    suido: {
+                        type: '自來水費 (水道料金)', money: '¥3,240', deadline: '7月15日 為止',
+                        steps: [
+                            { t: '拿出信箱的熱感紙', d: '找出塞在信箱裡、印有藍色字體和條碼的長條狀小收條。' },
+                            { t: '出門買宵夜時順便帶上', d: '不用急。等下一次深夜肚子餓要去超商買便當或炸雞時，順便塞進口袋。' },
+                            { t: '在櫃檯結帳時一併掃描', d: '買飲料時一起把這張單子拿給店員刷條碼，合併付錢即可。' }
+                        ]
+                    }
+                }
             },
-            'suido': {
-                statusText: '重要度：通常', statusClass: 'status-green',
-                type: '水道料金（すいどう）', money: '¥3,240', deadline: '7月15日まで',
-                steps: [
-                    { title: 'ポストのペラペラな紙', desc: 'ポストに入っていた、青い文字がたくさん書いてある小さな感熱紙（バーコード付き）を用意。' },
-                    { title: '夜食のついでに持っていく', desc: '急ぐ必要はない。次にコンビニに夜食を買いに行く時に、その紙をポケットに入れておく。' },
-                    { title: 'レジで一緒にスキャン', desc: 'ファミチキやラーメンを買うついでに店員に渡し、合算して支払う。これだけ。' }
-                ]
+            en: {
+                promptLoading: "Starting camera...<br>(Please grant access)",
+                btnShutter: "Scan Document",
+                lblDemo: "Or use demo samples below",
+                lblAnalyzing: "Real OCR Processing...",
+                lblResType: "Document Type",
+                lblResMoney: "Amount to Pay",
+                lblResDeadline: "Deadline",
+                lblActions: "Action Items (3 Steps)",
+                btnDone: "Understood",
+                statusHigh: "Priority: High",
+                statusUrgent: "Warning: Critical",
+                statusNormal: "Priority: Normal",
+                statusTrash: "No Action Needed",
+                ocrProgress: "Extracting text and numbers from photo...",
+                customScan: {
+                    type: "Detected Official Document",
+                    steps: [
+                        { t: "Check for Barcode", d: "Verify if there is a payment barcode on the paper you just photographed." },
+                        { t: "Pay the Amount", d: "If a barcode exists, go to a convenience store and pay the amount shown on screen." },
+                        { t: "Discard Extra Papers", d: "Keep the barcode sheet, you can discard all other bulky explanation letters." }
+                    ]
+                },
+                trashScan: {
+                    type: "Direct Mail / Advertisement",
+                    money: "¥ 0 (Free)",
+                    deadline: "Discard Anytime",
+                    steps: [
+                        { t: "Throw in Trash Bin", d: "This is NOT a bill. It is just an ad or junk notice. No payment is required whatsoever." },
+                        { t: "Tear Private Info", d: "Rip the part showing your name and address with your hands before tossing it." },
+                        { t: "Forget About It", d: "No need to worry. Free up your brain space and relax!" }
+                    ]
+                },
+                data: {
+                    juumin: {
+                        type: 'Residence Tax (住民税)', money: '¥14,500', deadline: 'Until June 30th (Thu)',
+                        steps: [
+                            { t: 'Tear off the "Payment Slip"', d: 'Find the slip with a "barcode" inside the envelope. Ignore and throw away all other text/pamphlets.' },
+                            { t: 'Go to the nearest Convenience Store', d: 'Take the slip and cash/e-money to any 7-Eleven, FamilyMart, or Lawson.' },
+                            { t: 'Hand to Clerk and Pay', d: 'Give the slip to the clerk, pay ¥14,500, and keep the stamped receipt. Done!' }
+                        ]
+                    },
+                    nenkin: {
+                        type: 'National Pension Warning', money: '¥33,060', deadline: 'IMMEDIATELY (Overdue)',
+                        steps: [
+                            { t: 'Find the Pink/Red slip', d: 'Pull out the most threatening pink or red colored slip with a barcode from the letter.' },
+                            { t: 'Withdraw Cash from ATM', d: 'Get around ¥34,000 cash and go straight to the convenience store. Ignoring this may freeze your bank account.' },
+                            { t: 'Pay at the Counter', d: 'Hand the slip to the clerk and pay. This will lift the warnings immediately.' }
+                        ]
+                    },
+                    suido: {
+                        type: 'Water Bill (水道料金)', money: '¥3,240', deadline: 'Until July 15th',
+                        steps: [
+                            { t: 'Grab the receipt slip from mailbox', d: 'Locate the small receipt-like slip with blue text and a barcode from your mailbox.' },
+                            { t: 'Bring it when buying late-night snacks', d: 'No rush. Just put it in your pocket the next time you go to grab a midnight snack.' },
+                            { t: 'Scan together with your snacks', d: 'Hand it to the clerk while buying your snacks and pay for everything at once.' }
+                        ]
+                    }
+                }
+            },
+            kr: {
+                promptLoading: "카메라 기동 중...<br>(권한을 허용해 주세요)",
+                btnShutter: "문서 스캔",
+                lblDemo: "또는 샘플로 확인 (데모용)",
+                lblAnalyzing: "실시간 OCR 분석 중...",
+                lblResType: "문서 종류",
+                lblResMoney: "납부 금액",
+                lblResDeadline: "납부 기한",
+                lblActions: "해야 할 일 (3 STEPS)",
+                btnDone: "확인 (뒤로가기)",
+                statusHigh: "중요도: 높음",
+                statusUrgent: "경고: 매우 위험",
+                statusNormal: "중요도: 보통",
+                statusTrash: "불필요: 쓰레기통행",
+                ocrProgress: "이미지 속 글자와 숫자를 판독하고 있습니다...",
+                customScan: {
+                    type: "인식된 종이 고지서",
+                    steps: [
+                        { t: "바코드 유무 확인", d: "사진을 찍은 고지서에 편의점 수납용 바코드가 있는지 눈으로 확인합니다." },
+                        { t: "편의점 납부 진행", d: "바코드가 있다면 수납 용지를 들고 편의점으로 가 화면에 적힌 금액을 지불합니다." },
+                        { t: "불필요 서류 파기", d: "바코드 고지서 이외의 번거로운 설명서 뭉치는 전부 휴지통에 버립니다." }
+                    ]
+                },
+                trashScan: {
+                    type: "광고 우편물 / 정기 안내문",
+                    money: "¥ 0 (납부 불필요)",
+                    deadline: "즉시 파기 가능",
+                    steps: [
+                        { t: "쓰레기통에 바로 버리기", d: "청구서가 아닙니다. 단순 광고지 혹은 정보성 통지서이므로 단 1엔도 납부할 필요가 없습니다." },
+                        { t: "개인정보 찢기", d: "이름과 주소가 표시된 주소창 부위만 안전하게 손으로 갈기갈기 찢어서 버려주세요." },
+                        { t: "가볍게 잊어버리기", d: "신경 쓸 가치가 없습니다. 기분 좋게 넷플릭스나 보며 휴식을 취하세요." }
+                    ]
+                },
+                data: {
+                    juumin: {
+                        type: '주민세 (住民税)', money: '¥14,500', deadline: '6월 30일 (목) 까지',
+                        steps: [
+                            { t: '납부서 찢기', d: '봉투 안에서 바코드가 인쇄된 길쭉한 종이만 찢어서 꺼냅니다. 다른 설명서는 버려도 무방합니다.' },
+                            { t: '편의점으로 이동', d: '그 종이와 현금을 들고 가장 가까운 편의점(세븐, 패밀리마트, 로손)으로 갑니다.' },
+                            { t: '점원에게 주고 계산', d: '점원에게 종이를 건네고 ¥14,500을 지불합니다. 스탬프가 찍힌 영수증을 받으면 끝.' }
+                        ]
+                    },
+                    nenkin: {
+                        type: '국민연금 독촉장', money: '¥33,060', deadline: '지금 즉시 (기한 초과)',
+                        steps: [
+                            { t: '분홍/빨간색 고지서 찾기', d: '독촉장 봉투에서 가장 위협적인 분홍색 혹은 빨간색 바코드 용지를 꺼냅니다.' },
+                            { t: '현금 인출', d: 'ATM에서 약 34,000엔을 인출해 편의점으로 직행합니다. 방치 시 통장이 압류될 수 있습니다.' },
+                            { t: '점원에게 납부', d: '편의점 계산대에서 바로 납부하여 연금 독촉 경고를 해제합니다.' }
+                        ]
+                    },
+                    suido: {
+                        type: '수도 요금 (水道料金)', money: '¥3,240', deadline: '7월 15일 까지',
+                        steps: [
+                            { t: '우편함에서 영수증 꺼내기', d: '우편함에 들어있던 파란 글씨가 많이 적힌 감열지(바코드 포함)를 챙깁니다.' },
+                            { t: '야식 사러 갈 때 챙기기', d: '급하지 않으니 다음에 편의점에 야식 사러 갈 때 주머니에 가볍게 챙겨 나갑니다.' },
+                            { t: '계산 시 함께 제시', d: '편의점 계산 시 점원에게 제시해 야식과 함께 계산을 끝냅니다.' }
+                        ]
+                    }
+                }
             }
         };
 
+        let currentLang = 'jp';
+        let currentDocKey = 'juumin';
         let videoStream = null;
 
         window.addEventListener('DOMContentLoaded', () => {
             initCamera();
+            updateUIStrings();
         });
 
+        // 啟動鏡頭
         async function initCamera() {
             try {
                 videoStream = await navigator.mediaDevices.getUserMedia({
@@ -520,12 +774,49 @@
                 video.srcObject = videoStream;
                 video.style.display = 'block';
                 document.getElementById('cam-placeholder').style.display = 'none';
-                document.getElementById('scan-guide').style.display = 'block'; // ガイド線を表示
+                document.getElementById('scan-guide').style.display = 'block';
             } catch (err) {
-                console.error("相機啟動失敗:", err);
+                console.error("Camera error:", err);
+                const errText = {
+                    jp: "カメラが見つかりません。デモボタンを使用してください。",
+                    cn: "未檢測到相機。請使用下方範例按鈕演示。",
+                    en: "Camera not found. Please use the demo buttons below.",
+                    kr: "카메라를 찾을 수 없습니다. 데모 버튼을 이용해 주세요."
+                };
                 document.getElementById('cam-placeholder').innerHTML = 
-                    `<div class="scan-icon">⚠️</div><div class="scan-prompt" style="font-size:0.9rem;">カメラが見つかりません。<br>下のサンプルボタンを使ってください。</div>`;
+                    `<div class="scan-icon">⚠️</div><div class="scan-prompt" style="font-size:0.85rem;">${errText[currentLang]}</div>`;
             }
+        }
+
+        function changeLanguage(langCode) {
+            currentLang = langCode;
+            document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
+            document.getElementById('btn-' + langCode).classList.add('active');
+            
+            updateUIStrings();
+            if (document.getElementById('screen-result').classList.contains('active')) {
+                // 如果已經在結果畫面，就刷新語言
+                if (currentDocKey === 'real_ocr_result' || currentDocKey === 'trash_ocr_result') {
+                    renderRealOCRResult(lastRecognizedText);
+                } else {
+                    renderResult(currentDocKey);
+                }
+            }
+        }
+
+        function updateUIStrings() {
+            const trans = translations[currentLang];
+            const prompt = document.getElementById('prompt-loading');
+            if (prompt) prompt.innerHTML = trans.promptLoading;
+            
+            document.getElementById('btn-shutter').innerText = trans.btnShutter.toUpperCase();
+            document.getElementById('lbl-demo').innerText = trans.lblDemo.toUpperCase();
+            document.getElementById('lbl-analyzing').innerText = trans.lblAnalyzing.toUpperCase();
+            document.getElementById('lbl-res-type').innerText = trans.lblResType;
+            document.getElementById('lbl-res-money').innerText = trans.lblResMoney;
+            document.getElementById('lbl-res-deadline').innerText = trans.lblResDeadline;
+            document.getElementById('lbl-actions').innerText = trans.lblActions;
+            document.getElementById('btn-done').innerText = trans.btnDone.toUpperCase();
         }
 
         function switchScreen(screenId) {
@@ -533,67 +824,197 @@
             document.getElementById(screenId).classList.add('active');
         }
 
+        // 拍照與真實智慧掃描
+        let lastRecognizedText = "";
+
         function takeSnapshot() {
             const video = document.getElementById('webcam');
             const canvas = document.getElementById('capture-canvas');
             const ctx = canvas.getContext('2d');
             const flash = document.getElementById('flash');
 
-            // 1. シャッターフラッシュアニメーション（一瞬白く光らせる）
+            // 1. 閃光燈特效
             flash.style.opacity = '1';
             setTimeout(() => {
                 flash.style.opacity = '0';
                 flash.style.transition = 'opacity 0.2s ease-out';
             }, 50);
 
-            // 2. キャプチャ
+            // 2. 擷取圖片
             if (videoStream && video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
                 const dataUrl = canvas.toDataURL('image/jpeg');
-                document.getElementById('scan-back-preview').style.display = 'block';
-                document.getElementById('scan-back-preview').src = dataUrl;
+                const previewImg = document.getElementById('scan-back-preview');
+                previewImg.style.display = 'block';
+                previewImg.src = dataUrl;
+
+                // 3. 進入 OCR 分析階段
+                switchScreen('screen-loading');
+                document.getElementById('lbl-progress').innerText = translations[currentLang].ocrProgress;
+
+                // 4. 調用 Tesseract.js 真實解析相機拍攝到的文字
+                Tesseract.recognize(
+                    dataUrl,
+                    'jpn', // 使用日語字庫解析
+                    { logger: m => {
+                        if (m.status === 'recognizing text') {
+                            const progress = Math.round(m.progress * 100);
+                            document.getElementById('lbl-progress').innerText = `${translations[currentLang].ocrProgress} (${progress}%)`;
+                        }
+                    }}
+                ).then(({ data: { text } }) => {
+                    console.log("真實識別出的文字成果:", text);
+                    lastRecognizedText = text;
+                    processRecognizedText(text);
+                }).catch(err => {
+                    console.error("OCR Error:", err);
+                    // 若失敗，使用備用智能兜底
+                    processRecognizedText("");
+                });
+
             } else {
-                document.getElementById('scan-back-preview').style.display = 'none';
+                // 無鏡頭時防呆
+                triggerDemo('juumin');
+            }
+        }
+
+        // 智能解析文本
+        function processRecognizedText(text) {
+            // 尋找日文中的「金額」
+            // 正則表達式：尋找帶有 ¥、円 的數字，或直接尋找3位以上數字
+            const moneyRegex = /(?:[\u00A5¥]|円)\s*([0-9,，]{3,8})|([0-9,，]{3,8})\s*(円)/i;
+            const moneyMatch = text.match(moneyRegex);
+
+            // 尋找「期限」
+            // 正則表達式：尋找 xx月xx日 或 202x年xx月xx日 或 xx/xx
+            const dateRegex = /(\d{1,2})\s*月\s*(\d{1,2})\s*日|(\d{4})[./-](\d{1,2})[./-](\d{1,2})/;
+            const dateMatch = text.match(dateRegex);
+
+            let detectedMoney = "";
+            let detectedDeadline = "";
+
+            if (moneyMatch) {
+                // 擷取配對到的純數字
+                const rawNum = moneyMatch[1] || moneyMatch[2];
+                detectedMoney = `¥${rawNum.trim()}`;
             }
 
-            // 3. スキャン中画面を経て結果へ
-            // カメラを止めずにキープ
-            startAnalysis('juumin');
+            if (dateMatch) {
+                if (dateMatch[1] && dateMatch[2]) {
+                    detectedDeadline = `${dateMatch[1]}月${dateMatch[2]}日`;
+                } else {
+                    detectedDeadline = `${dateMatch[4]}月${dateMatch[5]}日`;
+                }
+            }
+
+            // 如果有偵測到金額
+            if (detectedMoney) {
+                currentDocKey = 'real_ocr_result';
+                renderRealOCRResult({
+                    type: analyzeDocumentType(text),
+                    money: detectedMoney,
+                    deadline: detectedDeadline || "通知書を参照 (信上載明之期限)"
+                });
+            } else {
+                // 如果完全沒有金額數字，代表可能是非通知/非繳費單（如宣傳單、信封封面、空白紙）
+                currentDocKey = 'trash_ocr_result';
+                renderTrashOCRResult();
+            }
+            
+            switchScreen('screen-result');
         }
 
+        // 依據字詞判定文件種類
+        function analyzeDocumentType(text) {
+            if (text.includes("住民") || text.includes("税")) return "住民税 (Tax)";
+            if (text.includes("年金") || text.includes("保險")) return "国民年金 (Pension)";
+            if (text.includes("水道") || text.includes("ガス") || text.includes("電気")) return "公共料金 (Utility Bill)";
+            return "請求書 / 納付書";
+        }
+
+        // 渲染真實掃描結果
+        function renderRealOCRResult(customData) {
+            const trans = translations[currentLang];
+            const badge = document.getElementById('res-status');
+            
+            badge.innerText = trans.statusHigh;
+            badge.className = 'status-pill pill-yellow';
+
+            document.getElementById('res-type').innerText = customData.type || trans.customScan.type;
+            document.getElementById('res-money').innerText = customData.money;
+            document.getElementById('res-deadline').innerText = customData.deadline;
+
+            const steps = trans.customScan.steps;
+            document.getElementById('step1-title').innerText = steps[0].t;
+            document.getElementById('step1-desc').innerText = steps[0].d;
+            document.getElementById('step2-title').innerText = steps[1].t;
+            document.getElementById('step2-desc').innerText = steps[1].d;
+            document.getElementById('step3-title').innerText = steps[2].t;
+            document.getElementById('step3-desc').innerText = steps[2].d;
+        }
+
+        // 渲染「免繳費垃圾郵件」智能結果
+        function renderTrashOCRResult() {
+            const trans = translations[currentLang];
+            const badge = document.getElementById('res-status');
+            
+            badge.innerText = trans.statusTrash;
+            badge.className = 'status-pill pill-green';
+
+            document.getElementById('res-type').innerText = trans.trashScan.type;
+            document.getElementById('res-money').innerText = trans.trashScan.money;
+            document.getElementById('res-deadline').innerText = trans.trashScan.deadline;
+
+            const steps = trans.trashScan.steps;
+            document.getElementById('step1-title').innerText = steps[0].t;
+            document.getElementById('step1-desc').innerText = steps[0].d;
+            document.getElementById('step2-title').innerText = steps[1].t;
+            document.getElementById('step2-desc').innerText = steps[1].d;
+            document.getElementById('step3-title').innerText = steps[2].t;
+            document.getElementById('step3-desc').innerText = steps[2].d;
+        }
+
+        // 快速演示樣品按鈕
         function triggerDemo(docKey) {
             document.getElementById('scan-back-preview').style.display = 'none';
-            startAnalysis(docKey);
-        }
-
-        function startAnalysis(docKey) {
+            currentDocKey = docKey;
             switchScreen('screen-loading');
+            document.getElementById('lbl-progress').innerText = "Simulating analytics...";
             setTimeout(() => {
                 renderResult(docKey);
                 switchScreen('screen-result');
-            }, 1800);
+            }, 1000);
         }
 
         function renderResult(docKey) {
-            const data = documentDatabase[docKey];
-            
+            const trans = translations[currentLang];
+            const data = trans.data[docKey];
             const badge = document.getElementById('res-status');
-            badge.innerText = data.statusText;
-            badge.className = 'status-badge ' + data.statusClass;
+            
+            if (docKey === 'juumin') {
+                badge.innerText = trans.statusHigh;
+                badge.className = 'status-pill pill-yellow';
+            } else if (docKey === 'nenkin') {
+                badge.innerText = trans.statusUrgent;
+                badge.className = 'status-pill pill-red';
+            } else {
+                badge.innerText = trans.statusNormal;
+                badge.className = 'status-pill pill-green';
+            }
 
             document.getElementById('res-type').innerText = data.type;
             document.getElementById('res-money').innerText = data.money;
             document.getElementById('res-deadline').innerText = data.deadline;
 
-            document.getElementById('step1-title').innerText = data.steps[0].title;
-            document.getElementById('step1-desc').innerText = data.steps[0].desc;
-            document.getElementById('step2-title').innerText = data.steps[1].title;
-            document.getElementById('step2-desc').innerText = data.steps[1].desc;
-            document.getElementById('step3-title').innerText = data.steps[2].title;
-            document.getElementById('step3-desc').innerText = data.steps[2].desc;
+            document.getElementById('step1-title').innerText = data.steps[0].t;
+            document.getElementById('step1-desc').innerText = data.steps[0].d;
+            document.getElementById('step2-title').innerText = data.steps[1].t;
+            document.getElementById('step2-desc').innerText = data.steps[1].d;
+            document.getElementById('step3-title').innerText = data.steps[2].t;
+            document.getElementById('step3-desc').innerText = data.steps[2].d;
         }
 
         function resetApp() {
