@@ -615,7 +615,7 @@
     <canvas id="capture-canvas" style="display:none;"></canvas>
 
     <script>
-        // 四國語言與智慧光譜過濾配置數據庫
+        // 四國語言全數據庫基本架構（動態生成的金額與日期將在這裡動態注入）
         const translations = {
             jp: {
                 promptLoading: "カメラ起動中...<br>(許可してください)",
@@ -643,7 +643,6 @@
                     suido: "日常支払",
                     hoken: "加入通知"
                 },
-                // 智慧浮水印文案
                 holoTags: {
                     juumin: "住民税 確定",
                     nenkin: "督促状 警告",
@@ -652,23 +651,23 @@
                 },
                 data: {
                     juumin: {
-                        type: '住民税（じゅうみんぜい）', money: '¥14,500', deadline: '6月30日（木）まで',
+                        type: '住民税（じゅうみんぜい）',
                         steps: [
                             { t: '「納付書」をちぎる', d: '封筒の中から「バーコード」がついている縦長の紙を探して、それだけを破り取る。他は全部無視。' },
                             { t: 'コンビニのレジに行く', d: 'その紙と財布を持ってコンビニへ行く。大脳は使わなくてよい。' },
-                            { t: 'お金を払って終了', d: 'レジで店員に紙を渡し、14,500円を払う。スタンプを押された控えをもらってミッション完了。' }
+                            { t: 'お金を払って終了', d: 'レジで店員に紙を渡し、{MONEY}を払う。スタンプを押された控えをもらってミッション完了。' }
                         ]
                     },
                     nenkin: {
-                        type: '国民年金 催告状', money: '¥33,060', deadline: '今すぐ（指定日超過）',
+                        type: '国民年金 催告状',
                         steps: [
                             { t: 'ピンクか赤の紙を探す', d: '「催告状」と書かれた一番ヤバそうな色のバーコード付きの紙を引っ張り出す。' },
-                            { t: 'ATMで現金を下ろす', d: '34,000円くらいを下ろして、そのままコンビニのレジへ直行する。無視すると口座ロックの危険。' },
+                            { t: 'ATMで現金を下ろす', d: '{MONEY}くらいを下ろして、そのままコンビニのレジへ直行する。無視すると口座ロックの危険。' },
                             { t: 'レジで払って呪縛を解く', d: '店員に渡して支払う。これで国からの恐怖の督促は一旦止まる。' }
                         ]
                     },
                     suido: {
-                        type: '水道料金（すいどうりょうきん）', money: '¥3,240', deadline: '7月15日まで',
+                        type: '水道料金（すいどうりょうきん）',
                         steps: [
                             { t: 'ポストのペラペラな紙', d: 'ポストに入っていた、青い文字がたくさん書いてある小さな感熱紙（バーコード付き）を用意。' },
                             { t: '夜食のついでに持っていく', d: '急ぐ必要はない。次にコンビニに夜食を買いに行く時に、その紙をポケットに入れておく。' },
@@ -676,11 +675,11 @@
                         ]
                     },
                     hoken: {
-                        type: '国民健康保険税（こくみんけんこうほけん）', money: '¥8,700', deadline: '7月31日まで',
+                        type: '国民健康保険税（こくみんけんこうほけん）',
                         steps: [
                             { t: '納付書を取り出す', d: '「国民健康保険」と書いてある、1期〜8期分の中から「第1期」と書いてあるバーコード付きの紙を1枚選ぶ。' },
                             { t: '最寄りのコンビニへ行く', d: 'お気に入りのコンビニへ行く。レジで支払い対応可能。財布の中身を確認すること。' },
-                            { t: '支払って保管', d: '店員にスキャンしてもらい、8,700円を支払う。領収書は破らずに保管する。' }
+                            { t: '支払って保管', d: '店員にスキャンしてもらい、{MONEY}を支払う。領収書は破らずに保管する。' }
                         ]
                     }
                 }
@@ -719,35 +718,35 @@
                 },
                 data: {
                     juumin: {
-                        type: '居民稅 (住民税)', money: '¥14,500', deadline: '6月30日 (週四) 為止',
+                        type: '居民稅 (住民税)',
                         steps: [
                             { t: '撕下「繳費單」', d: '打開信封，只找出有「條碼 (Barcode)」的那張長方形紙條。其他說明廢話直接扔掉。' },
                             { t: '走向最近的超商', d: '帶著那張條碼紙和現金，走到最近的 7-11、全家或 Lawson。' },
-                            { t: '交給店員，付款', d: '把紙條遞給店員，支付 14,500 日圓。拿好蓋章的收據即可。' }
+                            { t: '交給店員，付款', d: '把紙條遞給店員，支付 {MONEY} 日圓。拿好蓋章的收據即可。' }
                         ]
                     },
                     nenkin: {
-                        type: '國民年金 催繳通知書', money: '¥33,060', deadline: '立刻 (已逾期)',
+                        type: '國民年金 催繳通知書',
                         steps: [
                             { t: '找出粉紅/紅色的單子', d: '從信封中找出最顯眼、印有條碼的粉紅色或紅色催繳單。' },
-                            { t: '去 ATM 領取現金', d: '領取約 34,000 日圓，直接前往超商。不理會的話銀行帳戶可能被凍結。' },
+                            { t: '去 ATM 領取現金', d: '領取約 {MONEY} 的現金，直接前往超商。不理會的話銀行帳戶可能被凍結。' },
                             { t: '在超商櫃檯繳清', d: '把單子給店員並付款。這樣一來，政府的催繳程序就會暫停。' }
                         ]
                     },
                     suido: {
-                        type: '自來水費 (水道料金)', money: '¥3,240', deadline: '7月15日 為止',
+                        type: '自來水費 (水道料金)',
                         steps: [
-                            { t: '拿出信箱的熱感紙', d: '找出塞 in 信箱裡、印有藍色字體和條碼的長條狀小收條。' },
+                            { t: '拿出信箱的熱感紙', d: '找出塞在信箱裡、印有藍色字體和條碼的長條狀小收條。' },
                             { t: '出門買宵夜時順便帶上', d: '不用急。等下一次深夜肚子餓要去超商買便當或炸雞時，順便塞進口袋。' },
                             { t: '在櫃檯結帳時一併掃描', d: '買飲料時一起把這張單子拿給店員刷條碼，合併付錢即可。' }
                         ]
                     },
                     hoken: {
-                        type: '國民健康保險費 (健康保険)', money: '¥8,700', deadline: '7月31日 為止',
+                        type: '國民健康保險費 (健康保険)',
                         steps: [
                             { t: '抽出「第1期」繳費單', d: '從厚厚一疊保費中找出寫著「第1期」且有條碼的單據。其餘期數的先收好。' },
                             { t: '前往最近的超商', d: '帶著這張條碼單和錢包下樓，任何一家日本主流超商皆可繳納。' },
-                            { t: '完成付款並蓋章', d: '讓店員刷條碼，支付 8,700 日圓。拿回並保管好蓋好超商章的「領収書」。' }
+                            { t: '完成付款並蓋章', d: '讓店員刷條碼，支付 {MONEY} 日圓。拿回並保管好蓋好超商章的「領収書」。' }
                         ]
                     }
                 }
@@ -786,23 +785,23 @@
                 },
                 data: {
                     juumin: {
-                        type: 'Residence Tax (住民税)', money: '¥14,500', deadline: 'Until June 30th (Thu)',
+                        type: 'Residence Tax (住民税)',
                         steps: [
                             { t: 'Tear off the "Payment Slip"', d: 'Find the slip with a "barcode" inside the envelope. Ignore and throw away all other text/pamphlets.' },
                             { t: 'Go to the nearest Convenience Store', d: 'Take the slip and cash/e-money to any 7-Eleven, FamilyMart, or Lawson.' },
-                            { t: 'Hand to Clerk and Pay', d: 'Give the slip to the clerk, pay ¥14,500, and keep the stamped receipt. Done!' }
+                            { t: 'Hand to Clerk and Pay', d: 'Give the slip to the clerk, pay {MONEY}, and keep the stamped receipt. Done!' }
                         ]
                     },
                     nenkin: {
-                        type: 'National Pension Warning', money: '¥33,060', deadline: 'IMMEDIATELY (Overdue)',
+                        type: 'National Pension Warning',
                         steps: [
                             { t: 'Find the Pink/Red slip', d: 'Pull out the most threatening pink or red colored slip with a barcode from the letter.' },
-                            { t: 'Withdraw Cash from ATM', d: 'Get around ¥34,000 cash and go straight to the convenience store. Ignoring this may freeze your bank account.' },
+                            { t: 'Withdraw Cash from ATM', d: 'Get around {MONEY} cash and go straight to the convenience store. Ignoring this may freeze your bank account.' },
                             { t: 'Pay at the Counter', d: 'Hand the slip to the clerk and pay. This will lift the warnings immediately.' }
                         ]
                     },
                     suido: {
-                        type: 'Water Bill (水道料金)', money: '¥3,240', deadline: 'Until July 15th',
+                        type: 'Water Bill (水道料金)',
                         steps: [
                             { t: 'Grab the receipt slip from mailbox', d: 'Locate the small receipt-like slip with blue text and a barcode from your mailbox.' },
                             { t: 'Bring it when buying late-night snacks', d: 'No rush. Just put it in your pocket the next time you go to grab a midnight snack.' },
@@ -810,11 +809,11 @@
                         ]
                     },
                     hoken: {
-                        type: 'Health Insurance Bill (健康保険)', money: '¥8,700', deadline: 'Until July 31st',
+                        type: 'Health Insurance Bill (健康保険)',
                         steps: [
                             { t: 'Extract the "1st Period" Slip', d: 'From the stack of bills, find the one labeled "第1期" (1st period) with a payment barcode.' },
                             { t: 'Go to any Convenience Store', d: 'Walk to the nearest shop with the slip and cash. It only takes 1 minute.' },
-                            { t: 'Pay and Keep the Receipt', d: 'Let the cashier scan it, pay ¥8,700, and safely keep the stamped receipt paper.' }
+                            { t: 'Pay and Keep the Receipt', d: 'Let the cashier scan it, pay {MONEY}, and safely keep the stamped receipt paper.' }
                         ]
                     }
                 }
@@ -853,23 +852,23 @@
                 },
                 data: {
                     juumin: {
-                        type: '주민세 (住民税)', money: '¥14,500', deadline: '6월 30일 (목) 까지',
+                        type: '주민세 (住民税)',
                         steps: [
                             { t: '납부서 찢기', d: '봉투 안에서 바코드가 인쇄된 길쭉한 종이만 찢어서 꺼냅니다. 다른 설명서는 버려도 무방합니다.' },
                             { t: '편의점으로 이동', d: '그 종이와 현금을 들고 가장 가까운 편의점(세븐, 패밀리마트, 로손)으로 갑니다.' },
-                            { t: '점원에게 주고 계산', d: '점원에게 종이를 건네고 ¥14,500을 지불합니다. 스탬프가 찍힌 영수증을 받으면 끝.' }
+                            { t: '점원에게 주고 계산', d: '점원에게 종이를 건네고 {MONEY}을 지불합니다. 스탬프가 찍힌 영수증을 받으면 끝.' }
                         ]
                     },
                     nenkin: {
-                        type: '국민연금 독촉장', money: '¥33,060', deadline: '지금 즉시 (기한 초과)',
+                        type: '국민연금 독촉장',
                         steps: [
-                            { t: '분홍/빨간색 고지서 찾기', d: '독촉장 봉투에서 가장 위협적인 분홍색 혹은 빨간색 바코드 용지를 꺼냅니다.' },
-                            { t: '현금 인출', d: 'ATM에서 약 34,000엔을 인출해 편의점으로 직행합니다. 방치 시 통장이 압류될 수 있습니다.' },
+                            { t: '분홍/빨간색 고지서 찾기', d: '독촉장 봉투에서 가장 위협적인 분홍색 혹은 빨간색 바코드 고지서 1장만 골라 꺼냅니다.' },
+                            { t: '현금 인출', d: 'ATM에서 약 {MONEY}을 인출해 편의점으로 직행합니다. 방치 시 통장이 압류될 수 있습니다.' },
                             { t: '점원에게 납부', d: '편의점 계산대에서 바로 납부하여 연금 독촉 경고를 해제합니다.' }
                         ]
                     },
                     suido: {
-                        type: '수도 요금 (水道料金)', money: '¥3,240', deadline: '7월 15일 까지',
+                        type: '수도 요금 (水道料金)',
                         steps: [
                             { t: '우편함에서 영수증 꺼내기', d: '우편함에 들어있던 파란 글씨가 많이 적힌 감열지(바코드 포함)를 챙깁니다.' },
                             { t: '야식 사러 갈 때 챙기기', d: '급하지 않으니 다음에 편의점에 야식 사러 갈 때 주머니에 가볍게 챙겨 나갑니다.' },
@@ -877,11 +876,11 @@
                         ]
                     },
                     hoken: {
-                        type: '국민건강보험료 (健康保険)', money: '¥8,700', deadline: '7월 31일 까지',
+                        type: '국민건강보험료 (健康保険)',
                         steps: [
                             { t: '1기 납부서 고르기', d: '여러 장의 납부서 중 "第1기"(1기)라고 적힌 바코드 고지서 1장만 골라 꺼냅니다.' },
                             { t: '가까운 편의점으로 이동', d: '고지서와 현금을 지참하고 편의점에 방문합니다. 24시간 언제든 수납 가능합니다.' },
-                            { t: '수수료 없이 결제 완료', d: '점원에게 고지서를 보여주고 ¥8,700을 수납합니다. 영수증 도장이 찍힌 영수증은 보관합니다.' }
+                            { t: '수수료 없이 결제 완료', d: '점원에게 고지서를 보여주고 {MONEY}을 수납합니다. 영수증 도장이 찍힌 영수증은 보관합니다.' }
                         ]
                     }
                 }
@@ -915,6 +914,12 @@
         let currentLang = 'jp';
         let selectedDocType = 'juumin'; // 預設公文類型
         let videoStream = null;
+
+        // 當前動態計算出來的金額與期限快取，保障切換語言時資料一致
+        let activeFuzzyData = {
+            money: "",
+            deadline: ""
+        };
 
         window.addEventListener('DOMContentLoaded', () => {
             initCamera();
@@ -1001,6 +1006,90 @@
             document.getElementById(screenId).classList.add('active');
         }
 
+        // 智慧動態隨機數據生成器：基於真實日本生活標準，模擬動態解析
+        function generateFuzzyData(docType) {
+            const today = new Date();
+            let randomMoney = 0;
+            let deadlineStr = "";
+
+            // 隨機數格式化帶千分位 (逗號)
+            const formatMoney = (num) => "¥" + num.toString().replace(/\B(?=(\d{3})+(?!\d))/g, ",");
+
+            switch (docType) {
+                case 'juumin':
+                    // 住民稅：通常在 ¥10,000 ~ ¥20,000 之間
+                    randomMoney = Math.floor(Math.random() * (19000 - 12000 + 1)) + 12000;
+                    // 截止日期：動態算出本月或下月的月底
+                    const nextMonthLastDay = new Date(today.getFullYear(), today.getMonth() + 2, 0);
+                    deadlineStr = formatLangDate(nextMonthLastDay, "end");
+                    break;
+                    
+                case 'nenkin':
+                    // 國民年金：單月是 ¥16,590，演示時常出現雙月催繳 ¥33,180 或半年度 ¥99,540
+                    const nenkinOptions = [16590, 33180, 99540];
+                    randomMoney = nenkinOptions[Math.floor(Math.random() * nenkinOptions.length)];
+                    // 督促狀：通常為「即死逾期」
+                    deadlineStr = getLangUrgentText();
+                    break;
+                    
+                case 'suido':
+                    // 水道料金：單身戶一般在 ¥2,200 ~ ¥4,500 之間
+                    randomMoney = Math.floor(Math.random() * (4500 - 2200 + 1)) + 2200;
+                    // 截止日期：動態設在 15 天後
+                    const waterDueDate = new Date(today.getTime() + 15 * 24 * 60 * 60 * 1000);
+                    deadlineStr = formatLangDate(waterDueDate, "exact");
+                    break;
+                    
+                case 'hoken':
+                    // 健康保險：根據年資或打工一般在 ¥5,000 ~ ¥12,000 之間
+                    randomMoney = Math.floor(Math.random() * (12000 - 5000 + 1)) + 5000;
+                    // 截止日期：動態設在本月底
+                    const thisMonthLastDay = new Date(today.getFullYear(), today.getMonth() + 1, 0);
+                    deadlineStr = formatLangDate(thisMonthLastDay, "end");
+                    break;
+            }
+
+            activeFuzzyData.money = formatMoney(randomMoney);
+            activeFuzzyData.deadline = deadlineStr;
+        }
+
+        // 依據語言格式化截止日期文字
+        function formatLangDate(dateObj, mode) {
+            const y = dateObj.getFullYear();
+            const m = dateObj.getMonth() + 1;
+            const d = dateObj.getDate();
+            const dayNames = {
+                jp: ["日", "月", "火", "水", "木", "金", "土"],
+                cn: ["週日", "週一", "週二", "週三", "週四", "週五", "週六"],
+                en: ["Sun", "Mon", "Tue", "Wed", "Thu", "Fri", "Sat"],
+                kr: ["일", "월", "화", "수", "목", "금", "토"]
+            };
+            const dayIdx = dateObj.getDay();
+            const dayLabel = dayNames[currentLang][dayIdx];
+
+            if (currentLang === 'cn') {
+                return mode === "end" ? `${m}月30日 (月底為止)` : `${m}月${d}日 (${dayLabel})`;
+            } else if (currentLang === 'en') {
+                return mode === "end" ? `End of ${dateObj.toLocaleString('en-US', { month: 'long' })}` : `${dateObj.toLocaleString('en-US', { month: 'short' })} ${d}th (${dayLabel})`;
+            } else if (currentLang === 'kr') {
+                return mode === "end" ? `${m}월 말일까지` : `${m}월 ${d}일 (${dayLabel})`;
+            } else {
+                // 預設日文
+                return mode === "end" ? `${m}月末日まで` : `${m}月${d}日（${dayLabel}）まで`;
+            }
+        }
+
+        // 催繳單逾期文字多語系化
+        function getLangUrgentText() {
+            const texts = {
+                jp: "今すぐ（指定日超過）",
+                cn: "即刻 (已過期，危險)",
+                en: "IMMEDIATELY (Overdue)",
+                kr: "지금 즉시 (기한 초과)"
+            };
+            return texts[currentLang];
+        }
+
         // 拍照擷取與動態光譜特效渲染
         function takeSnapshot() {
             const video = document.getElementById('webcam');
@@ -1008,14 +1097,14 @@
             const ctx = canvas.getContext('2d');
             const flash = document.getElementById('flash');
 
-            // 1. 閃光燈效果
+            // 1. 快門白光閃爍效果
             flash.style.opacity = '1';
             setTimeout(() => {
                 flash.style.opacity = '0';
                 flash.style.transition = 'opacity 0.2s ease-out';
             }, 50);
 
-            // 2. 影像截圖與背景配置
+            // 2. 將相機影像複製到掃描畫面背景
             if (videoStream && video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
@@ -1029,24 +1118,24 @@
                 document.getElementById('scan-back-preview').style.display = 'none';
             }
 
-            // 3. 配置符合當前選擇文件的「專屬光譜濾鏡」與「智慧水印標籤」
+            // 3. 配置符合當前選擇文件的「專屬光譜過濾色調」與「智慧水印標籤」
             const spectral = spectralSettings[selectedDocType];
             const trans = translations[currentLang];
             
-            // 變更過濾器色調
             document.getElementById('color-filter').style.backgroundColor = spectral.color;
-            // 變更雷射線色彩與陰影
             const laser = document.getElementById('scanner-laser');
             laser.style.backgroundColor = spectral.laser;
             laser.style.boxShadow = spectral.shadow;
             
-            // 更新浮水印內容
             const holoTag = document.getElementById('holo-tag');
             holoTag.innerText = trans.holoTags[selectedDocType].toUpperCase();
-            holoTag.style.color = spectral.laser.replace('1)', '0.25)'); // 微調半透明
+            holoTag.style.color = spectral.laser.replace('1)', '0.25)');
             holoTag.style.borderColor = spectral.laser.replace('1)', '0.25)');
 
-            // 4. 進入雷射解析動畫畫面
+            // 4. 動態即時計算本輪拍照的金額與日期，防止靜態死板！
+            generateFuzzyData(selectedDocType);
+
+            // 5. 進入 1.8 秒的高科技雷射解析中動畫畫面
             switchScreen('screen-loading');
             document.getElementById('lbl-progress').innerText = trans.ocrProgress;
 
@@ -1056,7 +1145,7 @@
             }, 1800);
         }
 
-        // 渲染對應之多語系解析數據
+        // 將選取公文之完美多語系數據渲染到結果畫面
         function renderResult(docKey) {
             const trans = translations[currentLang];
             const data = trans.data[docKey];
@@ -1076,17 +1165,20 @@
                 badge.className = 'status-pill pill-green';
             }
 
-            // 本文渲染
+            // 本文智慧動態注入
             document.getElementById('res-type').innerText = data.type;
-            document.getElementById('res-money').innerText = data.money;
-            document.getElementById('res-deadline').innerText = data.deadline;
+            document.getElementById('res-money').innerText = activeFuzzyData.money;
+            document.getElementById('res-deadline').innerText = activeFuzzyData.deadline;
 
+            // 3個無腦步驟 (將步驟內動態變更的錢也替換掉)
             document.getElementById('step1-title').innerText = data.steps[0].t;
-            document.getElementById('step1-desc').innerText = data.steps[0].d;
+            document.getElementById('step1-desc').innerText = data.steps[0].d.replace('{MONEY}', activeFuzzyData.money);
+            
             document.getElementById('step2-title').innerText = data.steps[1].t;
-            document.getElementById('step2-desc').innerText = data.steps[1].d;
+            document.getElementById('step2-desc').innerText = data.steps[1].d.replace('{MONEY}', activeFuzzyData.money);
+            
             document.getElementById('step3-title').innerText = data.steps[2].t;
-            document.getElementById('step3-desc').innerText = data.steps[2].d;
+            document.getElementById('step3-desc').innerText = data.steps[2].d.replace('{MONEY}', activeFuzzyData.money);
         }
 
         function resetApp() {
