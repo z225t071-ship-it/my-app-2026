@@ -15,6 +15,7 @@
             --safe-color: #00ff00;
             --warning-color: #ffcc00;
             --accent-blue: #0078D4;
+            --filter-color: rgba(255, 255, 255, 0.3); /* 動態變更 */
         }
 
         *, *::before, *::after {
@@ -293,18 +294,51 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.3;
-            filter: grayscale(1) blur(2px);
+            opacity: 0.4;
+            filter: blur(2px);
+            transition: filter 0.3s;
+        }
+
+        /* 智慧光譜色調過濾層 */
+        .spectral-filter {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            mix-blend-mode: color;
+            pointer-events: none;
+            z-index: 1;
+            background-color: transparent;
+            transition: background-color 0.3s;
+        }
+
+        /* 擬真浮水印辨識標籤 */
+        .hologram-watermark {
+            position: absolute;
+            font-size: 3.5rem;
+            font-weight: 900;
+            text-transform: uppercase;
+            letter-spacing: 2px;
+            color: rgba(255, 255, 255, 0.15);
+            border: 5px solid rgba(255, 255, 255, 0.15);
+            padding: 10px 20px;
+            transform: rotate(-25deg);
+            pointer-events: none;
+            z-index: 2;
+            text-align: center;
+            line-height: 1;
+            transition: all 0.3s;
         }
 
         .laser-line {
             position: absolute;
             width: 100%;
-            height: 2px;
+            height: 4px;
             background: #ffffff;
-            box-shadow: 0 0 12px #ffffff;
+            box-shadow: 0 0 15px #ffffff;
             top: 0;
-            z-index: 2;
+            z-index: 3;
             animation: scanMove 1.5s infinite ease-in-out;
         }
 
@@ -319,18 +353,21 @@
             font-weight: 900;
             color: #ffffff;
             letter-spacing: 2px;
-            z-index: 3;
+            z-index: 4;
             text-transform: uppercase;
             text-align: center;
             padding: 0 20px;
+            text-shadow: 0 2px 10px rgba(0,0,0,0.8);
         }
 
         .loading-subtext {
             font-size: 0.8rem;
-            color: var(--text-muted);
-            z-index: 3;
+            color: var(--text-color);
+            z-index: 4;
             margin-top: 10px;
             text-align: center;
+            font-weight: bold;
+            text-shadow: 0 1px 5px rgba(0,0,0,0.8);
         }
 
         /* --- 畫面 3：解析結果面板 --- */
@@ -510,8 +547,14 @@
         <!-- SCREEN 2：高科技擬真掃描中 -->
         <div class="screen" id="screen-loading">
             <div class="loading-container">
+                <!-- 智慧抓拍背景 -->
                 <img id="scan-back-preview" src="" alt="Capture">
-                <div class="laser-line"></div>
+                <!-- 光譜過濾色調層 -->
+                <div class="spectral-filter" id="color-filter"></div>
+                <!-- 智能光學標籤浮水印 -->
+                <div class="hologram-watermark" id="holo-tag">TAG</div>
+                
+                <div class="laser-line" id="scanner-laser"></div>
                 <div class="loading-text" id="lbl-analyzing">ANALYZING...</div>
                 <div class="loading-subtext" id="lbl-progress">Extracting key data...</div>
             </div>
@@ -572,7 +615,7 @@
     <canvas id="capture-canvas" style="display:none;"></canvas>
 
     <script>
-        // 四國語言本體數據庫（真實還原日本日常公文痛點與無腦執行任務）
+        // 四國語言與智慧光譜過濾配置數據庫
         const translations = {
             jp: {
                 promptLoading: "カメラ起動中...<br>(許可してください)",
@@ -599,6 +642,13 @@
                     nenkin: "督促状",
                     suido: "日常支払",
                     hoken: "加入通知"
+                },
+                // 智慧浮水印文案
+                holoTags: {
+                    juumin: "住民税 確定",
+                    nenkin: "督促状 警告",
+                    suido: "水道料金 請求",
+                    hoken: "健康保険 通知"
                 },
                 data: {
                     juumin: {
@@ -661,6 +711,12 @@
                     suido: "日常水費",
                     hoken: "保費繳納"
                 },
+                holoTags: {
+                    juumin: "居民稅 確定",
+                    nenkin: "督促狀 警告",
+                    suido: "自來水費 繳納",
+                    hoken: "健康保險 通知"
+                },
                 data: {
                     juumin: {
                         type: '居民稅 (住民税)', money: '¥14,500', deadline: '6月30日 (週四) 為止',
@@ -681,7 +737,7 @@
                     suido: {
                         type: '自來水費 (水道料金)', money: '¥3,240', deadline: '7月15日 為止',
                         steps: [
-                            { t: '拿出信箱的熱感紙', d: '找出塞在信箱裡、印有藍色字體和條碼的長條狀小收條。' },
+                            { t: '拿出信箱的熱感紙', d: '找出塞 in 信箱裡、印有藍色字體和條碼的長條狀小收條。' },
                             { t: '出門買宵夜時順便帶上', d: '不用急。等下一次深夜肚子餓要去超商買便當或炸雞時，順便塞進口袋。' },
                             { t: '在櫃檯結帳時一併掃描', d: '買飲料時一起把這張單子拿給店員刷條碼，合併付錢即可。' }
                         ]
@@ -721,6 +777,12 @@
                     nenkin: "Warning Letter",
                     suido: "Utility Bill",
                     hoken: "Insurance"
+                },
+                holoTags: {
+                    juumin: "RESIDENCE TAX",
+                    nenkin: "PENSION EXPIRED",
+                    suido: "WATER BILL",
+                    hoken: "HEALTH INS."
                 },
                 data: {
                     juumin: {
@@ -783,6 +845,12 @@
                     suido: "수도세",
                     hoken: "보험료 납부"
                 },
+                holoTags: {
+                    juumin: "주민세 확정",
+                    nenkin: "독촉장 경고",
+                    suido: "수도요금 청구",
+                    hoken: "건강보험 통지"
+                },
                 data: {
                     juumin: {
                         type: '주민세 (住民税)', money: '¥14,500', deadline: '6월 30일 (목) 까지',
@@ -820,6 +888,30 @@
             }
         };
 
+        // 四種書類的光學光譜分析色調配置（與各自種類完美符合）
+        const spectralSettings = {
+            juumin: {
+                color: "rgba(0, 255, 0, 0.3)", // 綠色科技光譜
+                laser: "rgba(0, 255, 0, 1)",
+                shadow: "0 0 15px #00ff00"
+            },
+            nenkin: {
+                color: "rgba(255, 0, 85, 0.3)", // 紅色警報光譜
+                laser: "rgba(255, 0, 85, 1)",
+                shadow: "0 0 15px #ff0055"
+            },
+            suido: {
+                color: "rgba(0, 120, 212, 0.3)", // 藍色水利光譜
+                laser: "rgba(0, 120, 212, 1)",
+                shadow: "0 0 15px #0078D4"
+            },
+            hoken: {
+                color: "rgba(255, 204, 0, 0.3)", // 黃色射線光譜
+                laser: "rgba(255, 204, 0, 1)",
+                shadow: "0 0 15px #ffcc00"
+            }
+        };
+
         let currentLang = 'jp';
         let selectedDocType = 'juumin'; // 預設公文類型
         let videoStream = null;
@@ -829,7 +921,7 @@
             updateUIStrings();
         });
 
-        // 啟動手機背面相機
+        // 啟動相機
         async function initCamera() {
             try {
                 videoStream = await navigator.mediaDevices.getUserMedia({
@@ -842,7 +934,7 @@
                 document.getElementById('cam-placeholder').style.display = 'none';
                 document.getElementById('scan-guide').style.display = 'block';
             } catch (err) {
-                console.error("相機權限未獲授權:", err);
+                console.error("相機啟動失敗:", err);
                 const errText = {
                     jp: "カメラが見つかりません。下の書類タイプを選んでスキャンを押してください。",
                     cn: "未偵測到相機。請直接在下方選擇公文類型，並點選掃描按鈕。",
@@ -854,14 +946,14 @@
             }
         }
 
-        // 文件預選切換
+        // 文件選擇與切換
         function selectDocType(docType) {
             selectedDocType = docType;
             document.querySelectorAll('.selector-card').forEach(card => card.classList.remove('active'));
             document.getElementById('card-' + docType).classList.add('active');
         }
 
-        // 更改系統語言環境
+        // 切換系統語言環境
         function changeLanguage(langCode) {
             currentLang = langCode;
             document.querySelectorAll('.lang-btn').forEach(btn => btn.classList.remove('active'));
@@ -873,7 +965,7 @@
             }
         }
 
-        // 更新 UI 各靜態文字
+        // 更新介面各欄位文字
         function updateUIStrings() {
             const trans = translations[currentLang];
             const prompt = document.getElementById('prompt-loading');
@@ -890,7 +982,7 @@
             document.getElementById('lbl-actions').innerText = trans.lblActions;
             document.getElementById('btn-done').innerText = trans.btnDone.toUpperCase();
 
-            // 更新預選卡片中的文本
+            // 更新預選卡片
             document.getElementById('name-juumin').innerText = trans.docNames.juumin;
             document.getElementById('meta-juumin').innerText = trans.docMetas.juumin;
 
@@ -909,21 +1001,21 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 快門拍照與模擬掃描
+        // 拍照擷取與動態光譜特效渲染
         function takeSnapshot() {
             const video = document.getElementById('webcam');
             const canvas = document.getElementById('capture-canvas');
             const ctx = canvas.getContext('2d');
             const flash = document.getElementById('flash');
 
-            // 1. 快門白光閃爍效果
+            // 1. 閃光燈效果
             flash.style.opacity = '1';
             setTimeout(() => {
                 flash.style.opacity = '0';
                 flash.style.transition = 'opacity 0.2s ease-out';
             }, 50);
 
-            // 2. 將當前相機影像繪製到掃描背景
+            // 2. 影像截圖與背景配置
             if (videoStream && video.readyState === video.HAVE_ENOUGH_DATA) {
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
@@ -937,9 +1029,26 @@
                 document.getElementById('scan-back-preview').style.display = 'none';
             }
 
-            // 3. 進入 1.8 秒的高科技雷射解析中動畫畫面
+            // 3. 配置符合當前選擇文件的「專屬光譜濾鏡」與「智慧水印標籤」
+            const spectral = spectralSettings[selectedDocType];
+            const trans = translations[currentLang];
+            
+            // 變更過濾器色調
+            document.getElementById('color-filter').style.backgroundColor = spectral.color;
+            // 變更雷射線色彩與陰影
+            const laser = document.getElementById('scanner-laser');
+            laser.style.backgroundColor = spectral.laser;
+            laser.style.boxShadow = spectral.shadow;
+            
+            // 更新浮水印內容
+            const holoTag = document.getElementById('holo-tag');
+            holoTag.innerText = trans.holoTags[selectedDocType].toUpperCase();
+            holoTag.style.color = spectral.laser.replace('1)', '0.25)'); // 微調半透明
+            holoTag.style.borderColor = spectral.laser.replace('1)', '0.25)');
+
+            // 4. 進入雷射解析動畫畫面
             switchScreen('screen-loading');
-            document.getElementById('lbl-progress').innerText = translations[currentLang].ocrProgress;
+            document.getElementById('lbl-progress').innerText = trans.ocrProgress;
 
             setTimeout(() => {
                 renderResult(selectedDocType);
@@ -947,7 +1056,7 @@
             }, 1800);
         }
 
-        // 將選取公文之完美多語系數據渲染到結果畫面
+        // 渲染對應之多語系解析數據
         function renderResult(docKey) {
             const trans = translations[currentLang];
             const data = trans.data[docKey];
@@ -967,7 +1076,7 @@
                 badge.className = 'status-pill pill-green';
             }
 
-            // 資料寫入
+            // 本文渲染
             document.getElementById('res-type').innerText = data.type;
             document.getElementById('res-money').innerText = data.money;
             document.getElementById('res-deadline').innerText = data.deadline;
