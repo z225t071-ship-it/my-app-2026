@@ -3,60 +3,541 @@
 <head>
     <meta charset="UTF-8">
     <meta name="viewport" content="width=device-width, initial-scale=1.0">
-    <title>Baka-yoke Translator | お役所書類のバカよけ翻訳機</title>
-    <link rel="stylesheet" href="style.css">
+    <title>GANYAKU - 行政文書クラッシャー</title>
+    <style>
+        :root {
+            --bg-color: #000000;
+            --panel-bg: #0d0d0d;
+            --border-color: #ffffff;
+            --danger-color: #ff0055;
+            --warning-color: #ffcc00;
+            --safe-color: #00ff00;
+            --accent-blue: #0078D4;
+        }
+
+        *, *::before, *::after {
+            box-sizing: border-box;
+        }
+
+        body {
+            margin: 0;
+            background-color: var(--bg-color);
+            color: #ffffff;
+            font-family: "Impact", "Arial Black", "Helvetica Neue", sans-serif;
+            display: flex;
+            justify-content: center;
+            align-items: center;
+            min-height: 100vh;
+            overflow-x: hidden;
+        }
+
+        /* スマホ用モックアップ外枠 */
+        .phone-container {
+            width: 100%;
+            max-width: 390px;
+            height: 844px;
+            background-color: var(--panel-bg);
+            border: 6px solid #222;
+            border-radius: 40px;
+            position: relative;
+            display: flex;
+            flex-direction: column;
+            overflow: hidden;
+            box-shadow: 0 0 50px rgba(255, 0, 85, 0.15);
+        }
+
+        /* 画面共通 */
+        .screen {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            display: flex;
+            flex-direction: column;
+            padding: 25px;
+            opacity: 0;
+            pointer-events: none;
+            transition: opacity 0.2s ease-in-out;
+            background-color: var(--panel-bg);
+        }
+
+        .screen.active {
+            opacity: 1;
+            pointer-events: auto;
+        }
+
+        .app-header {
+            text-align: center;
+            margin-top: 10px;
+            margin-bottom: 20px;
+        }
+
+        .app-title {
+            font-size: 2.8rem;
+            font-weight: 900;
+            line-height: 0.9;
+            letter-spacing: -2px;
+            background: linear-gradient(90deg, var(--danger-color), var(--warning-color));
+            -webkit-background-clip: text;
+            -webkit-text-fill-color: transparent;
+            margin: 0;
+            text-transform: uppercase;
+        }
+
+        .app-subtitle {
+            font-size: 0.9rem;
+            color: #666;
+            letter-spacing: 2px;
+            margin-top: 5px;
+        }
+
+        /* --- 画面1：リアルカメラ画面 --- */
+        .camera-box {
+            flex: 1;
+            border: 4px dashed #333;
+            border-radius: 20px;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: #111;
+            overflow: hidden;
+        }
+
+        #webcam {
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            display: none; /* カメラ起動後にJSで表示 */
+        }
+
+        .camera-placeholder {
+            position: absolute;
+            text-align: center;
+            z-index: 1;
+            padding: 20px;
+        }
+
+        .scan-icon {
+            font-size: 3.5rem;
+            margin-bottom: 10px;
+        }
+
+        .scan-prompt {
+            font-size: 1.1rem;
+            font-weight: bold;
+            color: #888;
+        }
+
+        .shutter-btn {
+            width: 100%;
+            background: var(--danger-color);
+            color: white;
+            border: none;
+            padding: 18px;
+            font-size: 1.5rem;
+            font-weight: 900;
+            border-radius: 15px;
+            margin-top: 15px;
+            cursor: pointer;
+            box-shadow: 0 5px 0 #b3003b;
+            text-transform: uppercase;
+        }
+        .shutter-btn:active {
+            transform: translateY(4px);
+            box-shadow: 0 1px 0 #b3003b;
+        }
+
+        .sample-selector-title {
+            font-size: 0.9rem;
+            color: #555;
+            margin: 15px 0 5px 0;
+            text-transform: uppercase;
+            letter-spacing: 1px;
+            text-align: center;
+        }
+
+        .sample-buttons {
+            display: flex;
+            gap: 8px;
+            margin-bottom: 10px;
+        }
+
+        .sample-mini-btn {
+            flex: 1;
+            background: #111;
+            border: 1px solid #333;
+            color: #aaa;
+            padding: 10px 5px;
+            font-size: 0.75rem;
+            font-weight: 900;
+            cursor: pointer;
+            border-radius: 8px;
+            text-align: center;
+        }
+        .sample-mini-btn:hover {
+            background: #fff;
+            color: #000;
+        }
+
+        /* --- 画面2：リアルスキャン中アニメーション --- */
+        .loading-container {
+            flex: 1;
+            display: flex;
+            flex-direction: column;
+            justify-content: center;
+            align-items: center;
+            position: relative;
+            background: #000;
+            border-radius: 20px;
+            overflow: hidden;
+        }
+
+        #scan-back-preview {
+            position: absolute;
+            width: 100%;
+            height: 100%;
+            object-fit: cover;
+            opacity: 0.4; /* 撮影した写真をうっすら背景に映す */
+            filter: blur(2px) grayscale(0.5);
+        }
+
+        .laser-line {
+            position: absolute;
+            width: 100%;
+            height: 6px;
+            background: var(--danger-color);
+            box-shadow: 0 0 20px var(--danger-color), 0 0 10px #fff;
+            top: 0;
+            z-index: 2;
+            animation: scanMove 1.8s infinite ease-in-out;
+        }
+
+        @keyframes scanMove {
+            0% { top: 5%; }
+            50% { top: 95%; }
+            100% { top: 5%; }
+        }
+
+        .loading-text {
+            font-size: 2.5rem;
+            font-weight: 900;
+            color: #fff;
+            text-transform: uppercase;
+            letter-spacing: -1px;
+            margin-bottom: 10px;
+            text-align: center;
+            z-index: 3;
+            text-shadow: 0 0 10px #000;
+        }
+
+        /* --- 画面3：暴力結果画面 --- */
+        .result-scroll {
+            flex: 1;
+            overflow-y: auto;
+            padding-right: 5px;
+        }
+        .result-scroll::-webkit-scrollbar { width: 0; }
+
+        .keyword-panel {
+            background: #000;
+            border: 3px solid var(--border-color);
+            padding: 15px;
+            margin-bottom: 20px;
+            position: relative;
+        }
+
+        .status-badge {
+            position: absolute;
+            top: -15px;
+            right: 15px;
+            font-size: 1.1rem;
+            font-weight: 900;
+            padding: 4px 12px;
+            transform: skewX(-10deg);
+        }
+        .status-red { background: var(--danger-color); color: #fff; }
+        .status-yellow { background: var(--warning-color); color: #000; }
+        .status-green { background: var(--safe-color); color: #000; }
+
+        .keyword-row {
+            display: flex;
+            justify-content: space-between;
+            align-items: baseline;
+            border-bottom: 1px dashed #333;
+            padding: 8px 0;
+        }
+        .keyword-row:last-child { border-bottom: none; }
+
+        .k-label { font-size: 0.85rem; color: #666; }
+        .k-value { font-size: 1.6rem; font-weight: 900; }
+        .k-value.large { font-size: 2.6rem; color: var(--warning-color); line-height: 1; }
+
+        .step-section-title {
+            font-size: 1.3rem;
+            font-weight: 900;
+            margin-bottom: 12px;
+            border-left: 5px solid var(--safe-color);
+            padding-left: 10px;
+        }
+
+        .step-card {
+            background: #111;
+            border: 2px solid #222;
+            padding: 12px;
+            margin-bottom: 12px;
+            display: flex;
+            align-items: flex-start;
+            gap: 12px;
+            border-radius: 12px;
+        }
+
+        .step-num {
+            background: var(--safe-color);
+            color: #000;
+            font-size: 1.1rem;
+            font-weight: 900;
+            padding: 2px 8px;
+            border-radius: 6px;
+        }
+
+        .step-title { font-size: 1.2rem; font-weight: 900; color: #fff; margin: 0 0 4px 0; }
+        .step-desc { font-size: 0.85rem; color: #888; margin: 0; line-height: 1.3; }
+
+        .action-btn {
+            width: 100%;
+            background: var(--accent-blue);
+            color: #fff;
+            border: none;
+            padding: 18px;
+            font-size: 1.6rem;
+            font-weight: 900;
+            cursor: pointer;
+            margin-top: 10px;
+            box-shadow: 0 5px 0 #004c87;
+        }
+        .action-btn:active { transform: translateY(4px); box-shadow: 0 1px 0 #004c87; }
+        .action-btn.reset-btn { background: #222; box-shadow: 0 5px 0 #111; }
+        .action-btn.reset-btn:active { box-shadow: 0 1px 0 #111; }
+    </style>
 </head>
 <body>
-    <header>
-        <div class="container">
-            <h1>📄 Baka-yoke Translator</h1>
-            <p>JP / CN / KR / EN Multilingual Support</p>
+
+    <div class="phone-container">
+
+        <div class="screen active" id="screen-start">
+            <div class="app-header">
+                <h1 class="app-title">GANYAKU</h1>
+                <div class="app-subtitle">行政文書クラッシャー</div>
+            </div>
+
+            <div class="camera-box">
+                <div class="camera-placeholder" id="cam-placeholder">
+                    <div class="scan-icon">📸</div>
+                    <div class="scan-prompt">カメラ起動中...<br><span style="font-size:0.8rem; color:#555;">(許可してください)</span></div>
+                </div>
+                <video id="webcam" autoplay playsinline></video>
+            </div>
+
+            <button class="shutter-btn" onclick="takeSnapshot()">📸 書類をスキャン</button>
+
+            <div class="sample-selector-title">またはサンプルで検証 (デモ用)</div>
+            <div class="sample-buttons">
+                <button class="sample-mini-btn" onclick="triggerDemo('juumin')">📄 住民税</button>
+                <button class="sample-mini-btn" onclick="triggerDemo('nenkin')">🚨 年金督促</button>
+                <button class="sample-mini-btn" onclick="triggerDemo('suido')">💧 水道料金</button>
+            </div>
         </div>
-    </header>
 
-    <main class="container">
-        <section class="translator-section">
-            <div class="input-group">
-                <label for="input-text">
-                    [JP] 入力 / [CN] 请输入 / [KR] 입력 / [EN] Input
-                </label>
-                <textarea id="input-text" placeholder="Type here... / ここに入力... / 请在这里输入... / 여기에 입력..."></textarea>
+        <div class="screen" id="screen-loading">
+            <div class="loading-container">
+                <img id="scan-back-preview" src="" alt="Captured Document">
+                <div class="laser-line"></div>
+                <div class="loading-text">ANALYZING...</div>
+            </div>
+        </div>
+
+        <div class="screen" id="screen-result">
+            <div class="app-header" style="margin-bottom: 10px;">
+                <h1 class="app-title" style="font-size: 1.8rem;">CONCLUSION</h1>
             </div>
 
-            <div class="divider">
-                <div class="arrow">↓</div>
-            </div>
+            <div class="result-scroll">
+                <div class="keyword-panel">
+                    <div class="status-badge" id="res-status">重要度：大</div>
+                    <div class="keyword-row">
+                        <span class="k-label">書類の種類 (WHAT)</span>
+                        <span class="k-value" id="res-type">-</span>
+                    </div>
+                    <div class="keyword-row">
+                        <span class="k-label">払う金額 (MONEY)</span>
+                        <span class="k-value large" id="res-money">-</span>
+                    </div>
+                    <div class="keyword-row">
+                        <span class="k-label">期限 (DEADLINE)</span>
+                        <span class="k-value" id="res-deadline">-</span>
+                    </div>
+                </div>
 
-            <div class="output-group">
-                <label for="output-text">
-                    [JP] 変換結果 / [CN] 结果 / [KR] 결과 / [EN] Result
-                </label>
-                <div id="output-text" class="output-display" aria-live="polite">
-                    <span class="placeholder">Results will appear here automatically.</span>
+                <div class="step-section-title">やるべきこと (3 STEPS)</div>
+
+                <div class="step-card">
+                    <div class="step-num">01</div>
+                    <div class="step-content">
+                        <h3 class="step-title" id="step1-title">-</h3>
+                        <p class="step-desc" id="step1-desc">-</p>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-num">02</div>
+                    <div class="step-content">
+                        <h3 class="step-title" id="step2-title">-</h3>
+                        <p class="step-desc" id="step2-desc">-</p>
+                    </div>
+                </div>
+
+                <div class="step-card">
+                    <div class="step-num">03</div>
+                    <div class="step-content">
+                        <h3 class="step-title" id="step3-title">-</h3>
+                        <p class="step-desc" id="step3-desc">-</p>
+                    </div>
                 </div>
             </div>
 
-            <div class="action-footer">
-                <button id="copy-btn" class="btn-primary" disabled>
-                    [JP] コピー / [CN] 复制 / [KR] 복사 / [EN] Copy
-                </button>
-            </div>
-        </section>
-
-        <section class="info-section">
-            <p><strong>[JP]</strong> 難しい言葉を、誰にでもわかる言葉にリアルタイム変換します。</p>
-            <p><strong>[CN]</strong> 将公文术语实时转换为易于理解的语言。</p>
-            <p><strong>[KR]</strong> 행정 전문 용어를 알기 쉬운 말로 실시간 변환합니다.</p>
-            <p><strong>[EN]</strong> Real-time translation of bureaucratic terms into plain language.</p>
-        </section>
-    </main>
-
-    <footer>
-        <div class="container">
-            <p>&copy; 2026 Baka-yoke Translator</p>
+            <button class="action-btn reset-btn" onclick="resetApp()">UNDERSTOOD (戻る)</button>
         </div>
-    </footer>
 
-    <script src="script.js"></script>
+    </div>
+
+    <canvas id="capture-canvas" style="display:none;"></canvas>
+
+    <script>
+        // モックデータベース
+        const documentDatabase = {
+            'juumin': {
+                statusText: '重要度：大', statusClass: 'status-yellow',
+                type: '住民税（じゅうみんぜい）', money: '¥14,500', deadline: '6月30日（木）まで',
+                steps: [
+                    { title: '「納付書」をちぎる', desc: '封筒の中から「バーコード」がついている縦長の紙を探して、それだけを破り取る。他は全部無視。' },
+                    { title: 'コンビニのレジに行く', desc: 'その紙と財布を持ってコンビニへ行く。大脳は使わなくてよい。' },
+                    { title: 'お金を払って終了', desc: 'レジで店員に紙を渡し、14,500円を払う。スタンプを押された控えをもらってミッション完了。' }
+                ]
+            },
+            'nenkin': {
+                statusText: '警告：即死級', statusClass: 'status-red',
+                type: '国民年金 催告状', money: '¥33,060', deadline: '今すぐ（指定日超過）',
+                steps: [
+                    { title: 'ピンクか赤の紙を探す', desc: '「催告状」と書かれた一番ヤバそうな色のバーコード付きの紙を引っ張り出す。' },
+                    { title: 'ATMで現金を下ろす', desc: '34,000円くらいを下ろして、そのままコンビニのレジへ直行する。無視すると口座ロックの危険。' },
+                    { title: 'レジで払って呪縛を解く', desc: '店員に渡して支払う。これで国からの恐怖の督促は一旦止まる。' }
+                ]
+            },
+            'suido': {
+                statusText: '重要度：通常', statusClass: 'status-green',
+                type: '水道料金（すいどう）', money: '¥3,240', deadline: '7月15日まで',
+                steps: [
+                    { title: 'ポストのペラペラな紙', desc: 'ポストに入っていた、青い文字がたくさん書いてある小さな感熱紙（バーコード付き）を用意。' },
+                    { title: '夜食のついでに持っていく', desc: '急ぐ必要はない。次にコンビニに夜食を買いに行く時に、その紙をポケットに入れておく。' },
+                    { title: 'レジで一緒にスキャン', desc: 'ファミチキやラーメンを買うついでに店員に渡し、合算して支払う。これだけ。' }
+                ]
+            }
+        };
+
+        let videoStream = null;
+
+        // ページ読み込み時にカメラを初期化
+        window.addEventListener('DOMContentLoaded', () => {
+            initCamera();
+        });
+
+        async function initCamera() {
+            try {
+                // 背面カメラ（environment）を最優先で要求
+                videoStream = await navigator.mediaDevices.getUserMedia({
+                    video: { facingMode: 'environment' },
+                    audio: false
+                });
+                const video = document.getElementById('webcam');
+                video.srcObject = videoStream;
+                video.style.display = 'block';
+                document.getElementById('cam-placeholder').style.display = 'none';
+            } catch (err) {
+                console.error("相機啟動失敗:", err);
+                document.getElementById('cam-placeholder').innerHTML = 
+                    `<div class="scan-icon">⚠️</div><div class="scan-prompt" style="font-size:0.9rem;">カメラが見つかりません。<br>下のサンプルボタンを使ってください。</div>`;
+            }
+        }
+
+        function switchScreen(screenId) {
+            document.querySelectorAll('.screen').forEach(s => s.classList.remove('active'));
+            document.getElementById(screenId).classList.add('active');
+        }
+
+        // 本当に写真を撮る処理
+        function takeSnapshot() {
+            const video = document.getElementById('webcam');
+            const canvas = document.getElementById('capture-canvas');
+            const ctx = canvas.getContext('2d');
+
+            if (videoStream && video.readyState === video.HAVE_ENOUGH_DATA) {
+                // ビデオの現在のフレームをキャンバスに描画
+                canvas.width = video.videoWidth;
+                canvas.height = video.videoHeight;
+                ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
+
+                // 画像データに変換してスキャン画面の背景にセット
+                const dataUrl = canvas.toDataURL('image/jpeg');
+                document.getElementById('scan-back-preview').style.display = 'block';
+                document.getElementById('scan-back-preview').src = dataUrl;
+            } else {
+                // カメラが動いてない場合は背景なし
+                document.getElementById('scan-back-preview').style.display = 'none';
+            }
+
+            // 撮影したらスキャンアニメーションへ（本物っぽく見せるため住民税をデフォルトにする）
+            startAnalysis('juumin');
+        }
+
+        // サンプルボタンを押した時（デモ用）
+        function triggerDemo(docKey) {
+            document.getElementById('scan-back-preview').style.display = 'none'; // サンプルの場合は背景なし
+            startAnalysis(docKey);
+        }
+
+        function startAnalysis(docKey) {
+            switchScreen('screen-loading');
+            setTimeout(() => {
+                renderResult(docKey);
+                switchScreen('screen-result');
+            }, 1800); // 1.8秒スキャン演出を見せる
+        }
+
+        function renderResult(docKey) {
+            const data = documentDatabase[docKey];
+            
+            const badge = document.getElementById('res-status');
+            badge.innerText = data.statusText;
+            badge.className = 'status-badge ' + data.statusClass;
+
+            document.getElementById('res-type').innerText = data.type;
+            document.getElementById('res-money').innerText = data.money;
+            document.getElementById('res-deadline').innerText = data.deadline;
+
+            document.getElementById('step1-title').innerText = data.steps[0].title;
+            document.getElementById('step1-desc').innerText = data.steps[0].desc;
+            document.getElementById('step2-title').innerText = data.steps[1].title;
+            document.getElementById('step2-desc').innerText = data.steps[1].desc;
+            document.getElementById('step3-title').innerText = data.steps[2].title;
+            document.getElementById('step3-desc').innerText = data.steps[2].desc;
+        }
+
+        function resetApp() {
+            switchScreen('screen-start');
+        }
+    </script>
 </body>
 </html>
