@@ -4,7 +4,7 @@
 
 **URL:** https://z225t071-ship-it.github.io/my-app-2026/
 
-![App Preview](./お役所書類のバカよけ翻訳機.jpg)
+![App Preview](./最終発表のアプリ.jpg)
 
 ## 🚀 使い方 / How to Use
 
