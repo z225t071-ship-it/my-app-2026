@@ -23,7 +23,7 @@
             margin: 0;
             background-color: var(--bg-color);
             color: #ffffff;
-            font-family: "Impact", "Arial Black", "Helvetica Neue", sans-serif;
+            font-family: -apple-system, BlinkMacSystemFont, "Segoe UI", Roboto, "Hiragino Kaku Gothic ProN", sans-serif;
             display: flex;
             justify-content: center;
             align-items: center;
@@ -37,7 +37,7 @@
             max-width: 390px;
             height: 844px;
             background-color: var(--panel-bg);
-            border: 6px solid #222;
+            border: 8px solid #222;
             border-radius: 40px;
             position: relative;
             display: flex;
@@ -58,7 +58,7 @@
             padding: 25px;
             opacity: 0;
             pointer-events: none;
-            transition: opacity 0.2s ease-in-out;
+            transition: opacity 0.25s ease-in-out;
             background-color: var(--panel-bg);
         }
 
@@ -90,34 +90,62 @@
             color: #666;
             letter-spacing: 2px;
             margin-top: 5px;
+            font-weight: bold;
         }
 
         /* --- 画面1：リアルカメラ画面 --- */
-        .camera-box {
+        .camera-container {
             flex: 1;
-            border: 4px dashed #333;
-            border-radius: 20px;
-            display: flex;
-            flex-direction: column;
-            justify-content: center;
-            align-items: center;
             position: relative;
-            background: #111;
+            border: 4px solid #333;
+            border-radius: 20px;
             overflow: hidden;
+            background: #111;
         }
 
         #webcam {
             width: 100%;
             height: 100%;
             object-fit: cover;
-            display: none; /* カメラ起動後にJSで表示 */
+            display: none; /* カメラ起動後に表示 */
         }
+
+        /* カメラの中央に表示される「フォーカス枠」：これがあるだけで一気に本物感が出る */
+        .scan-frame {
+            position: absolute;
+            top: 10%;
+            left: 10%;
+            width: 80%;
+            height: 80%;
+            border: 2px solid rgba(0, 255, 0, 0.4);
+            pointer-events: none;
+            z-index: 5;
+            box-shadow: 0 0 0 9999px rgba(0, 0, 0, 0.5); /* 枠の外側を暗くする */
+        }
+
+        /* 枠の四隅の太線 */
+        .scan-frame::before, .scan-frame::after,
+        .scan-corner-bl, .scan-corner-br {
+            position: absolute;
+            width: 20px;
+            height: 20px;
+            border-color: var(--safe-color);
+            border-style: solid;
+            pointer-events: none;
+        }
+        .scan-frame::before { top: -2px; left: -2px; border-width: 4px 0 0 4px; } /* 左上 */
+        .scan-frame::after { top: -2px; right: -2px; border-width: 4px 4px 0 0; } /* 右上 */
+        .scan-corner-bl { bottom: -2px; left: -2px; border-width: 0 0 4px 4px; } /* 左下 */
+        .scan-corner-br { bottom: -2px; right: -2px; border-width: 0 4px 4px 0; } /* 右下 */
 
         .camera-placeholder {
             position: absolute;
+            top: 50%;
+            left: 50%;
+            transform: translate(-50%, -50%);
             text-align: center;
             z-index: 1;
-            padding: 20px;
+            width: 90%;
         }
 
         .scan-icon {
@@ -131,19 +159,33 @@
             color: #888;
         }
 
+        /* シャッターフラッシュ（シャッター押した時の白い閃光） */
+        .flash-overlay {
+            position: absolute;
+            top: 0;
+            left: 0;
+            width: 100%;
+            height: 100%;
+            background: #fff;
+            opacity: 0;
+            z-index: 10;
+            pointer-events: none;
+        }
+
         .shutter-btn {
             width: 100%;
             background: var(--danger-color);
             color: white;
             border: none;
-            padding: 18px;
-            font-size: 1.5rem;
+            padding: 20px;
+            font-size: 1.6rem;
             font-weight: 900;
             border-radius: 15px;
             margin-top: 15px;
             cursor: pointer;
             box-shadow: 0 5px 0 #b3003b;
             text-transform: uppercase;
+            letter-spacing: 1px;
         }
         .shutter-btn:active {
             transform: translateY(4px);
@@ -157,6 +199,7 @@
             text-transform: uppercase;
             letter-spacing: 1px;
             text-align: center;
+            font-weight: bold;
         }
 
         .sample-buttons {
@@ -170,7 +213,7 @@
             background: #111;
             border: 1px solid #333;
             color: #aaa;
-            padding: 10px 5px;
+            padding: 12px 5px;
             font-size: 0.75rem;
             font-weight: 900;
             cursor: pointer;
@@ -182,7 +225,7 @@
             color: #000;
         }
 
-        /* --- 画面2：リアルスキャン中アニメーション --- */
+        /* --- 画面2：リアルスキャン中（背景に撮影写真が入る） --- */
         .loading-container {
             flex: 1;
             display: flex;
@@ -200,7 +243,7 @@
             width: 100%;
             height: 100%;
             object-fit: cover;
-            opacity: 0.4; /* 撮影した写真をうっすら背景に映す */
+            opacity: 0.4;
             filter: blur(2px) grayscale(0.5);
         }
 
@@ -233,7 +276,7 @@
             text-shadow: 0 0 10px #000;
         }
 
-        /* --- 画面3：暴力結果画面 --- */
+        /* --- 画面3：結果画面 --- */
         .result-scroll {
             flex: 1;
             overflow-y: auto;
@@ -271,7 +314,7 @@
         }
         .keyword-row:last-child { border-bottom: none; }
 
-        .k-label { font-size: 0.85rem; color: #666; }
+        .k-label { font-size: 0.85rem; color: #666; font-weight: bold; }
         .k-value { font-size: 1.6rem; font-weight: 900; }
         .k-value.large { font-size: 2.6rem; color: var(--warning-color); line-height: 1; }
 
@@ -281,12 +324,13 @@
             margin-bottom: 12px;
             border-left: 5px solid var(--safe-color);
             padding-left: 10px;
+            text-transform: uppercase;
         }
 
         .step-card {
             background: #111;
             border: 2px solid #222;
-            padding: 12px;
+            padding: 15px;
             margin-bottom: 12px;
             display: flex;
             align-items: flex-start;
@@ -327,18 +371,29 @@
 
     <div class="phone-container">
 
+        <!-- SCREEN 1: カメラ起動画面 -->
         <div class="screen active" id="screen-start">
             <div class="app-header">
                 <h1 class="app-title">GANYAKU</h1>
                 <div class="app-subtitle">行政文書クラッシャー</div>
             </div>
 
-            <div class="camera-box">
+            <div class="camera-container">
                 <div class="camera-placeholder" id="cam-placeholder">
                     <div class="scan-icon">📸</div>
                     <div class="scan-prompt">カメラ起動中...<br><span style="font-size:0.8rem; color:#555;">(許可してください)</span></div>
                 </div>
+                <!-- リアルカメラ映像 -->
                 <video id="webcam" autoplay playsinline></video>
+                
+                <!-- カメラの対角線ガイド線 -->
+                <div class="scan-frame" id="scan-guide" style="display:none;">
+                    <div class="scan-corner-bl"></div>
+                    <div class="scan-corner-br"></div>
+                </div>
+
+                <!-- シャッターフラッシュ演出用の白いレイヤー -->
+                <div class="flash-overlay" id="flash"></div>
             </div>
 
             <button class="shutter-btn" onclick="takeSnapshot()">📸 書類をスキャン</button>
@@ -351,6 +406,7 @@
             </div>
         </div>
 
+        <!-- SCREEN 2: リアルスキャン中（背景に撮影写真が入る） -->
         <div class="screen" id="screen-loading">
             <div class="loading-container">
                 <img id="scan-back-preview" src="" alt="Captured Document">
@@ -359,6 +415,7 @@
             </div>
         </div>
 
+        <!-- SCREEN 3: 暴力結果画面 -->
         <div class="screen" id="screen-result">
             <div class="app-header" style="margin-bottom: 10px;">
                 <h1 class="app-title" style="font-size: 1.8rem;">CONCLUSION</h1>
@@ -413,10 +470,10 @@
 
     </div>
 
+    <!-- 瞬時にスクショを撮るための隠しキャンバス -->
     <canvas id="capture-canvas" style="display:none;"></canvas>
 
     <script>
-        // モックデータベース
         const documentDatabase = {
             'juumin': {
                 statusText: '重要度：大', statusClass: 'status-yellow',
@@ -449,14 +506,12 @@
 
         let videoStream = null;
 
-        // ページ読み込み時にカメラを初期化
         window.addEventListener('DOMContentLoaded', () => {
             initCamera();
         });
 
         async function initCamera() {
             try {
-                // 背面カメラ（environment）を最優先で要求
                 videoStream = await navigator.mediaDevices.getUserMedia({
                     video: { facingMode: 'environment' },
                     audio: false
@@ -465,6 +520,7 @@
                 video.srcObject = videoStream;
                 video.style.display = 'block';
                 document.getElementById('cam-placeholder').style.display = 'none';
+                document.getElementById('scan-guide').style.display = 'block'; // ガイド線を表示
             } catch (err) {
                 console.error("相機啟動失敗:", err);
                 document.getElementById('cam-placeholder').innerHTML = 
@@ -477,34 +533,39 @@
             document.getElementById(screenId).classList.add('active');
         }
 
-        // 本当に写真を撮る処理
         function takeSnapshot() {
             const video = document.getElementById('webcam');
             const canvas = document.getElementById('capture-canvas');
             const ctx = canvas.getContext('2d');
+            const flash = document.getElementById('flash');
 
+            // 1. シャッターフラッシュアニメーション（一瞬白く光らせる）
+            flash.style.opacity = '1';
+            setTimeout(() => {
+                flash.style.opacity = '0';
+                flash.style.transition = 'opacity 0.2s ease-out';
+            }, 50);
+
+            // 2. キャプチャ
             if (videoStream && video.readyState === video.HAVE_ENOUGH_DATA) {
-                // ビデオの現在のフレームをキャンバスに描画
                 canvas.width = video.videoWidth;
                 canvas.height = video.videoHeight;
                 ctx.drawImage(video, 0, 0, canvas.width, canvas.height);
 
-                // 画像データに変換してスキャン画面の背景にセット
                 const dataUrl = canvas.toDataURL('image/jpeg');
                 document.getElementById('scan-back-preview').style.display = 'block';
                 document.getElementById('scan-back-preview').src = dataUrl;
             } else {
-                // カメラが動いてない場合は背景なし
                 document.getElementById('scan-back-preview').style.display = 'none';
             }
 
-            // 撮影したらスキャンアニメーションへ（本物っぽく見せるため住民税をデフォルトにする）
+            // 3. スキャン中画面を経て結果へ
+            // カメラを止めずにキープ
             startAnalysis('juumin');
         }
 
-        // サンプルボタンを押した時（デモ用）
         function triggerDemo(docKey) {
-            document.getElementById('scan-back-preview').style.display = 'none'; // サンプルの場合は背景なし
+            document.getElementById('scan-back-preview').style.display = 'none';
             startAnalysis(docKey);
         }
 
@@ -513,7 +574,7 @@
             setTimeout(() => {
                 renderResult(docKey);
                 switchScreen('screen-result');
-            }, 1800); // 1.8秒スキャン演出を見せる
+            }, 1800);
         }
 
         function renderResult(docKey) {
